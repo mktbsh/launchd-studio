@@ -121,13 +121,19 @@ export function Inspector(props: InspectorProps) {
               onChange={(command) => props.onChange({ ...job, command })}
             />
           </Row>
-          <Row label="Folder">
-            <TextInput
-              mono
-              value={job.workingDirectory ?? ""}
-              placeholder="Home folder"
-              onChange={(value) => props.onChange(withText(job, "workingDirectory", value))}
-            />
+          <Row label="Folder" align="start">
+            <div className="space-y-1.5">
+              <TextInput
+                mono
+                value={job.workingDirectory ?? ""}
+                placeholder="Home folder"
+                onChange={(value) => props.onChange(withText(job, "workingDirectory", value))}
+              />
+              <p className="text-[11px] text-[var(--text-3)]">
+                Relative arguments resolve here. macOS keeps <code>~/Desktop</code>, <code>~/Documents</code>,
+                and <code>~/Downloads</code> out of reach of a LaunchAgent.
+              </p>
+            </div>
           </Row>
           <Row label="Environment" align="start">
             <EnvironmentEditor

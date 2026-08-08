@@ -118,6 +118,8 @@ The CLI searches the current directory and parents for `launchd-studio.json` or 
 
 Executable and path values must be absolute or begin with `~/`. Launchd Studio does not insert `sh -c` and does not inherit an interactive shell's PATH.
 
+`workingDirectory` becomes the process's current directory, so relative arguments in `command` resolve against it. Avoid `~/Desktop`, `~/Documents`, and `~/Downloads`: macOS withholds those from a LaunchAgent unless the executable itself has been granted Full Disk Access, and the job dies at startup with a *current directory is not accessible* error.
+
 ### Defaults
 
 A service defaults to:
