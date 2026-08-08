@@ -115,7 +115,11 @@ export function Inspector(props: InspectorProps) {
             <TextInput value={id} onChange={props.onRename} aria-label="Job name" />
           </Row>
           <Row label="Command" align="start">
-            <CommandEditor command={job.command} onChange={(command) => props.onChange({ ...job, command })} />
+            <CommandEditor
+              command={job.command}
+              toolPaths={capabilities.toolPaths}
+              onChange={(command) => props.onChange({ ...job, command })}
+            />
           </Row>
           <Row label="Folder">
             <TextInput

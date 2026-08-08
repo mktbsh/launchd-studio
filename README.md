@@ -193,7 +193,7 @@ launchd hands a job only the system `PATH`. A job's environment editor offers on
 | Use mise shims | `<MISE_DATA_DIR or ~/.local/share/mise>/shims` |
 | Use Homebrew | the first of `$HOMEBREW_PREFIX`, `/opt/homebrew`, `/usr/local` with an executable `bin/brew` |
 
-Executables in `command` still have to be absolute: launchd resolves nothing through `PATH`, which only applies to what the job itself spawns.
+Executables in `command` still have to be absolute: launchd resolves nothing through `PATH`, which only applies to what the job itself spawns. When the executable box holds a bare name, the command editor offers **Resolve in …** for each detected toolchain, which rewrites it to that directory's absolute path.
 
 ## Repository layout
 

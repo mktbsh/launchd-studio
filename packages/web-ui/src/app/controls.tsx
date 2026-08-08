@@ -6,6 +6,7 @@ import {
   type ButtonHTMLAttributes,
   type ReactNode,
 } from "react";
+import type { ToolPath } from "@launchd-studio/core/transport";
 import type { Tone } from "./draft";
 
 const TONE_COLOR: Record<Tone, string> = {
@@ -190,10 +191,14 @@ export function TextArea({ value, onChange, placeholder, rows = 3 }: {
 }
 
 // The command is an argv array, never a shell string — the editor has to say so.
-export function CommandEditor({ command, onChange }: {
+export function CommandEditor({ command, toolPaths, onChange }: {
   readonly command: ReadonlyArray<string>;
+  readonly toolPaths: ReadonlyArray<ToolPath>;
   readonly onChange: (command: ReadonlyArray<string>) => void;
 }) {
+  const executable = command[0] ?? "";
+  const bare = executable.length > 0 && !executable.includes("/");
+
   return (
     <div className="space-y-1.5">
       <div className="flex flex-wrap items-center gap-1.5">
@@ -233,6 +238,21 @@ export function CommandEditor({ command, onChange }: {
           + argument
         </button>
       </div>
+      {bare && toolPaths.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5">
+          {toolPaths.map((tool) => (
+            <button
+              key={tool.directory}
+              type="button"
+              title={`${tool.directory}/${executable}`}
+              onClick={() => onChange([`${tool.directory}/${executable}`, ...command.slice(1)])}
+              className="ui-press rounded-md border border-[var(--hairline-strong)] bg-[var(--surface-3)] px-2 py-1 text-[11px] text-[var(--text-2)] hover:text-[var(--text-1)]"
+            >
+              Resolve in {tool.name}
+            </button>
+          ))}
+        </div>
+      ) : null}
       <p className="text-[11px] text-[var(--text-3)]">
         Run directly, not through a shell. First box is the executable; use an absolute path or <code>~/</code>.
       </p>
