@@ -12,6 +12,27 @@ import {
 
 const context = { homeDirectory: "/Users/tester" } as const;
 
+const SAMPLE_SOURCE = `{
+  "version": 1,
+  "jobs": {
+    "local-api": {
+      "kind": "service",
+      "label": "dev.example.local-api",
+      "command": ["/opt/homebrew/bin/bun", "run", "src/index.ts"],
+      "workingDirectory": "~/src/local-api",
+      "start": "login",
+      "restart": "on-failure"
+    },
+    "daily-backup": {
+      "kind": "task",
+      "label": "dev.example.daily-backup",
+      "command": ["~/.local/bin/backup"],
+      "schedule": { "type": "calendar", "entries": [{ "hour": 3, "minute": 0 }] }
+    }
+  }
+}
+`;
+
 describe("manifest JSON", () => {
   test("rejects comments and trailing commas as syntax errors", () => {
     for (const source of [`{\n  // comment\n  "value": 1\n}`, `{\n  "value": [1, 2,]\n}`]) {
@@ -39,11 +60,20 @@ describe("manifest JSON", () => {
 });
 
 describe("manifest compiler", () => {
-  test("compiles the starter manifest", () => {
+  test("compiles the starter manifest with no jobs", () => {
     const result = compileManifest(DEFAULT_MANIFEST_SOURCE, context);
     expect(result.valid).toBe(true);
     if (!result.valid) {
       throw new Error("starter manifest must compile");
+    }
+    expect(result.manifest.jobs).toEqual([]);
+  });
+
+  test("sorts jobs by id", () => {
+    const result = compileManifest(SAMPLE_SOURCE, context);
+    expect(result.valid).toBe(true);
+    if (!result.valid) {
+      throw new Error("sample manifest must compile");
     }
     expect(result.manifest.jobs.map((job) => job.id)).toEqual([
       "daily-backup",
@@ -176,9 +206,9 @@ describe("plist rendering", () => {
 
 describe("planning and durations", () => {
   test("plans create and load", () => {
-    const result = compileManifest(DEFAULT_MANIFEST_SOURCE, context);
+    const result = compileManifest(SAMPLE_SOURCE, context);
     if (!result.valid || result.manifest.jobs[0] === undefined) {
-      throw new Error("starter manifest did not compile");
+      throw new Error("sample manifest did not compile");
     }
     const rendered = renderLaunchdJob(result.manifest.jobs[0]);
     const plan = planLaunchdJob(rendered, {
@@ -198,9 +228,9 @@ describe("planning and durations", () => {
   });
 
   test("reloads a loaded job when its runtime definition is not tracked", () => {
-    const result = compileManifest(DEFAULT_MANIFEST_SOURCE, context);
+    const result = compileManifest(SAMPLE_SOURCE, context);
     if (!result.valid || result.manifest.jobs[0] === undefined) {
-      throw new Error("starter manifest did not compile");
+      throw new Error("sample manifest did not compile");
     }
     const rendered = renderLaunchdJob(result.manifest.jobs[0]);
     const runtime = { supported: true, loaded: true, running: true } as const;
