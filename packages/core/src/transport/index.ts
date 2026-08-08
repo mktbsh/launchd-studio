@@ -1,5 +1,6 @@
 import type {
   Diagnostic,
+  JobDefinition,
   JobDoctorReport,
   JobExplanation,
   ManifestPlan,
@@ -7,26 +8,29 @@ import type {
   RuntimeJobStatus,
 } from "../domain";
 
+export interface SelfServiceOffer {
+  readonly id: string;
+  readonly job: JobDefinition;
+  readonly url: string;
+}
+
+export interface ToolPath {
+  readonly name: string;
+  readonly directory: string;
+}
+
 export interface StudioCapabilities {
-  readonly mode: "browser" | "local";
-  readonly manifestRead: boolean;
-  readonly manifestWrite: boolean;
-  readonly validate: true;
-  readonly format: true;
-  readonly render: true;
-  readonly explain: true;
-  readonly plan: boolean;
-  readonly apply: boolean;
-  readonly remove: boolean;
-  readonly status: boolean;
-  readonly control: boolean;
-  readonly logs: boolean;
-  readonly doctor: boolean;
+  /** Whether launchctl can be reached; false disables apply, remove, and control. */
+  readonly launchd: boolean;
+  /** Installed toolchain directories a job can put on its PATH. */
+  readonly toolPaths: ReadonlyArray<ToolPath>;
+  /** A ready-made job that keeps this Web UI running on a fixed port. */
+  readonly selfService: SelfServiceOffer;
 }
 
 export interface ManifestSourceResponse {
   readonly source: string;
-  readonly path?: string;
+  readonly path: string;
   readonly exists: boolean;
 }
 

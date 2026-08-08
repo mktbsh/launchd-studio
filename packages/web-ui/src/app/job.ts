@@ -32,6 +32,38 @@ export function withEnvironment(
   return withOptional(job, "environment", kept.length === 0 ? undefined : Object.fromEntries(kept));
 }
 
+export type EnvironmentEntries = ReadonlyArray<readonly [string, string]>;
+
+// launchd gives a job this PATH and nothing else, so an added directory has to
+// carry the defaults with it.
+const LAUNCHD_PATH = "/usr/bin:/bin:/usr/sbin:/sbin";
+
+function pathValue(entries: EnvironmentEntries): string {
+  return entries.find(([key]) => key === "PATH")?.[1] ?? LAUNCHD_PATH;
+}
+
+export function pathHasDirectory(entries: EnvironmentEntries, directory: string): boolean {
+  return pathValue(entries).split(":").includes(directory);
+}
+
+export function withPathDirectory(
+  entries: EnvironmentEntries,
+  directory: string,
+  enabled: boolean,
+): EnvironmentEntries {
+  const rest = pathValue(entries)
+    .split(":")
+    .filter((part) => part.length > 0 && part !== directory);
+  const path = (enabled ? [directory, ...rest] : rest).join(":");
+  const others = entries.filter(([key]) => key !== "PATH");
+  if (path.length === 0 || path === LAUNCHD_PATH) {
+    return others;
+  }
+  return entries.some(([key]) => key === "PATH")
+    ? entries.map((entry) => (entry[0] === "PATH" ? ["PATH", path] : entry))
+    : [...others, ["PATH", path]];
+}
+
 const SHARED_KEYS = [
   "label",
   "description",

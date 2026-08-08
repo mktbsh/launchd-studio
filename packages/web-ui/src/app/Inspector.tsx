@@ -9,6 +9,7 @@ import type {
   JobStatusResponse,
   LogStream,
   StudioCapabilities,
+  ToolPath,
 } from "@launchd-studio/core/transport";
 import {
   Chip,
@@ -34,10 +35,13 @@ import {
 import {
   DEFAULT_CALENDAR,
   parseInterval,
+  pathHasDirectory,
   withEnvironment,
   withKind,
+  withPathDirectory,
   withSchedule,
   withText,
+  type EnvironmentEntries,
 } from "./job";
 
 export interface InspectorProps {
@@ -74,7 +78,7 @@ export function Inspector(props: InspectorProps) {
           {dirty ? <Chip tone="amber">Staged</Chip> : null}
         </div>
         <div className="flex items-center gap-2">
-          {capabilities.control ? (
+          {capabilities.launchd ? (
             state === "running" ? (
               <PressButton disabled={busy} onClick={() => props.onControl("stop")}>
                 Stop
@@ -85,12 +89,12 @@ export function Inspector(props: InspectorProps) {
               </PressButton>
             )
           ) : null}
-          {capabilities.control && job.kind === "service" ? (
+          {capabilities.launchd && job.kind === "service" ? (
             <PressButton disabled={busy || !installed} onClick={() => props.onControl("restart")}>
               Restart
             </PressButton>
           ) : null}
-          {capabilities.remove ? (
+          {capabilities.launchd ? (
             <PressButton variant="destructive" disabled={busy || !installed} onClick={props.onUninstall}>
               Uninstall
             </PressButton>
@@ -122,7 +126,12 @@ export function Inspector(props: InspectorProps) {
             />
           </Row>
           <Row label="Environment" align="start">
-            <EnvironmentEditor key={id} job={job} onChange={props.onChange} />
+            <EnvironmentEditor
+              key={id}
+              job={job}
+              toolPaths={capabilities.toolPaths}
+              onChange={props.onChange}
+            />
           </Row>
         </Group>
 
@@ -187,15 +196,13 @@ export function Inspector(props: InspectorProps) {
           </Row>
         </Group>
 
-        {capabilities.logs ? (
-          <LogSection
-            path={logs?.path ?? ""}
-            content={logs?.content ?? ""}
-            stream={logs?.stream ?? "stderr"}
-            busy={busy}
-            onLoad={props.onLoadLogs}
-          />
-        ) : null}
+        <LogSection
+          path={logs?.path ?? ""}
+          content={logs?.content ?? ""}
+          stream={logs?.stream ?? "stderr"}
+          busy={busy}
+          onLoad={props.onLoadLogs}
+        />
 
         <Disclosure label="Advanced">
           <div className="space-y-4">
@@ -261,22 +268,40 @@ function LogSection({ path, content, stream, busy, onLoad }: {
   );
 }
 
-function EnvironmentEditor({ job, onChange }: {
+function EnvironmentEditor({ job, toolPaths, onChange }: {
   readonly job: JobDefinition;
+  readonly toolPaths: ReadonlyArray<ToolPath>;
   readonly onChange: (job: JobDefinition) => void;
 }) {
   // Held locally so clearing a key does not make the row vanish mid-edit.
-  const [entries, setEntries] = useState<ReadonlyArray<readonly [string, string]>>(
+  const [entries, setEntries] = useState<EnvironmentEntries>(
     Object.entries(job.environment ?? {}),
   );
 
-  const commit = (next: ReadonlyArray<readonly [string, string]>): void => {
+  const commit = (next: EnvironmentEntries): void => {
     setEntries(next);
     onChange(withEnvironment(job, next));
   };
 
   return (
     <div className="space-y-1.5">
+      {toolPaths.map((tool) => (
+        <label
+          key={tool.directory}
+          className="flex items-center gap-2 pb-1 text-xs text-[var(--text-2)]"
+          title={tool.directory}
+        >
+          <input
+            type="checkbox"
+            checked={pathHasDirectory(entries, tool.directory)}
+            onChange={(event) =>
+              commit(withPathDirectory(entries, tool.directory, event.target.checked))
+            }
+            className="accent-[var(--sys-blue)]"
+          />
+          Use {tool.name}
+        </label>
+      ))}
       {entries.map(([key, value], position) => (
         <div key={position} className="flex items-center gap-1.5">
           <input

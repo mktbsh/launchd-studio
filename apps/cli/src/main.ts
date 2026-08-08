@@ -26,7 +26,8 @@ import {
   readTextIfExists,
   writeTextAtomic,
 } from "./adapters/filesystem";
-import { LocalStudioService, StudioError } from "./service";
+import { defaultTokenPath, readOrCreateToken } from "./adapters/state";
+import { DEFAULT_WEB_UI_PORT, LocalStudioService, StudioError } from "./service";
 import { startWebUiServer } from "./server/server";
 
 const VERSION = "0.1.0";
@@ -71,7 +72,25 @@ Command options:
   remove --keep-plist
   logs --stream <stdout|stderr> --tail <lines> --follow
   web-ui --host <host> --port <port> --no-open --allow-remote
+
+Environment:
+  LAUNCHD_STUDIO_PORT         Web UI port; --port wins, 0 picks a free one
 `;
+
+function resolveWebUiPort(option: string | undefined): number {
+  const raw = option ?? process.env.LAUNCHD_STUDIO_PORT;
+  if (raw === undefined) {
+    return DEFAULT_WEB_UI_PORT;
+  }
+  const port = /^\d+$/u.test(raw.trim()) ? Number.parseInt(raw.trim(), 10) : Number.NaN;
+  if (!Number.isInteger(port) || port > 65_535) {
+    throw new StudioError(
+      `${option === undefined ? "LAUNCHD_STUDIO_PORT" : "--port"} must be between 0 and 65535.`,
+      { code: "cli.invalid-port" },
+    );
+  }
+  return port;
+}
 
 async function findConfigPath(explicitPath?: string): Promise<string> {
   if (explicitPath !== undefined) {
@@ -143,7 +162,12 @@ async function run(): Promise<number> {
   }
   const json = booleanOption(invocation.options, "json");
   const configPath = await findConfigPath(stringOption(invocation.options, "config"));
-  const service = new LocalStudioService({ configPath });
+  const webUiPort = resolveWebUiPort(stringOption(invocation.options, "port"));
+  const service = new LocalStudioService({
+    configPath,
+    // A random bind port cannot be baked into the always-on job.
+    webUiPort: webUiPort === 0 ? DEFAULT_WEB_UI_PORT : webUiPort,
+  });
 
   switch (invocation.command) {
     case "help": {
@@ -390,16 +414,11 @@ async function run(): Promise<number> {
     }
     case "web-ui": {
       const host = stringOption(invocation.options, "host") ?? "127.0.0.1";
-      const port = integerOption(invocation.options, "port", 0);
-      if (port < 0 || port > 65_535) {
-        throw new StudioError("--port must be between 0 and 65535.", {
-          code: "cli.invalid-port",
-        });
-      }
       const server = startWebUiServer({
         transport: service,
         host,
-        port,
+        port: webUiPort,
+        token: await readOrCreateToken(defaultTokenPath(service.homeDirectory)),
         openBrowser: booleanOption(invocation.options, "open", true),
         allowRemote: booleanOption(invocation.options, "allow-remote"),
       });

@@ -1,5 +1,5 @@
 import type { JobDefinition } from "@launchd-studio/core";
-import type { JobStatusResponse, StudioCapabilities } from "@launchd-studio/core/transport";
+import type { JobStatusResponse } from "@launchd-studio/core/transport";
 import { Chip, EmptyState, PressButton, StatusDot } from "./controls";
 import {
   jobIds,
@@ -17,15 +17,16 @@ export interface OverviewProps {
   readonly draft: ManifestDraft;
   readonly statuses: ReadonlyArray<JobStatusResponse>;
   readonly changed: ReadonlyArray<string>;
-  readonly capabilities: StudioCapabilities;
   readonly busy: boolean;
   readonly onOpen: (id: string) => void;
   readonly onAdd: () => void;
   readonly onRefresh: () => void;
+  /** Null once the Web UI already has a job in the manifest. */
+  readonly onAddSelfService: (() => void) | null;
 }
 
 export function Overview(props: OverviewProps) {
-  const { draft, statuses, changed, capabilities, busy } = props;
+  const { draft, statuses, changed, busy } = props;
   const ids = jobIds(draft);
   const states = ids.map((id) => ({
     id,
@@ -42,9 +43,7 @@ export function Overview(props: OverviewProps) {
       <header className="ui-chrome sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[var(--hairline)] px-7 py-3.5">
         <h2 className="text-[15px] font-semibold">Overview</h2>
         <div className="flex items-center gap-2">
-          {capabilities.status ? (
-            <PressButton disabled={busy} onClick={props.onRefresh}>Refresh</PressButton>
-          ) : null}
+          <PressButton disabled={busy} onClick={props.onRefresh}>Refresh</PressButton>
           <PressButton variant="filled" onClick={props.onAdd}>New job</PressButton>
         </div>
       </header>
@@ -68,6 +67,11 @@ export function Overview(props: OverviewProps) {
               );
             })}
           </dl>
+          {props.onAddSelfService === null ? null : (
+            <PressButton className="mt-4" onClick={props.onAddSelfService}>
+              Run Launchd Studio at login
+            </PressButton>
+          )}
         </section>
 
         {ids.length === 0 ? (

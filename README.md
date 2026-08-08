@@ -18,13 +18,13 @@ Instead of editing plist keys directly, define either a long-running `service` o
 - plan/apply without implicit prune
 - managed-definition tracking for conservative runtime drift detection
 - status, start, stop, restart, logs, and doctor commands
-- browser-only preview application
-- authenticated localhost Web UI served by the CLI
+- authenticated localhost Web UI served by the CLI, installable as a login service from its own Overview
+- mise and Homebrew detection for a job's `PATH`
 - Vite output embeddable in a standalone Bun executable
 
 ## Requirements
 
-Development requires Bun 1.3.x. Runtime mutation commands require macOS and a logged-in GUI user session. Rendering and browser preview are cross-platform.
+Development requires Bun 1.3.x. Runtime mutation commands require macOS and a logged-in GUI user session. Validation and rendering are cross-platform.
 
 ## Install and verify
 
@@ -56,14 +56,14 @@ Create a manifest:
 bun run apps/cli/src/main.ts init
 ```
 
-`init` writes both `launchd-studio.json` and `launchd-studio.schema.json` so editor completion works without relying on a hosted schema URL.
+`init` writes both `launchd-studio.json` and `launchd-studio.schema.json` so editor completion works without relying on a hosted schema URL. The generated manifest has no jobs; `examples/services.json` shows the shape of a populated one.
 
 Validate, inspect, and apply it:
 
 ```bash
 bun run apps/cli/src/main.ts validate
-bun run apps/cli/src/main.ts render local-api
-bun run apps/cli/src/main.ts explain local-api
+bun run apps/cli/src/main.ts render <job>
+bun run apps/cli/src/main.ts explain <job>
 bun run apps/cli/src/main.ts plan
 bun run apps/cli/src/main.ts apply
 ```
@@ -174,14 +174,26 @@ After a successful registration, Launchd Studio stores only ownership metadata a
 
 The JSON manifest remains the source of truth. The state file lets `plan` conservatively reload a loaded definition that was not registered by the current manifest, and lets `remove <job>` clean up a previously applied job even after that job was deleted from the manifest.
 
-## Web modes
+## Web UI
 
-The Vite application chooses its transport at startup.
+The Vite application runs only against the localhost API served by `web-ui`; it has no standalone browser mode. Without the bearer token it renders a single message pointing back at the CLI. `bun run dev:web` therefore needs a running `web-ui` and the token in the URL fragment.
 
-- Browser preview: validates, formats, renders, and explains using `/Users/you` as a preview home path.
-- CLI Web UI: reads and writes the selected manifest and exposes plan/apply/remove/status/control/log/doctor operations through a localhost API.
+`web-ui` binds to `127.0.0.1:43210`. Override the port with `--port` or `LAUNCHD_STUDIO_PORT`; `--port 0` picks a free one. The bearer token is generated once and kept at `~/Library/Application Support/launchd-studio/web-ui-token` with mode `0600`, so the URL survives a restart. The CLI opens a URL carrying that token in the fragment, the page stores it in same-tab `sessionStorage`, removes the fragment from browser history, and every API request is origin-checked. Remote binding requires `--allow-remote` and is not recommended.
 
-`web-ui` binds to `127.0.0.1` on a random port by default. It generates a random bearer token, opens a URL containing that token in the fragment, stores it only in same-tab `sessionStorage` for reloads, removes the fragment from browser history, and verifies request origin. Remote binding requires `--allow-remote` and is not recommended.
+### Run it at login
+
+The Overview offers **Run Launchd Studio at login**, which stages a `launchd-studio` service running `web-ui` on the fixed port against the current manifest. Nothing is written until you install the staged change. The bookmark is `http://127.0.0.1:43210/`; the token is added on first visit from the CLI-opened URL.
+
+### Toolchain paths
+
+launchd hands a job only the system `PATH`. A job's environment editor offers one checkbox per detected toolchain, each putting its directory in front of the job's `PATH`:
+
+| Checkbox | Detected at |
+| --- | --- |
+| Use mise shims | `<MISE_DATA_DIR or ~/.local/share/mise>/shims` |
+| Use Homebrew | the first of `$HOMEBREW_PREFIX`, `/opt/homebrew`, `/usr/local` with an executable `bin/brew` |
+
+Executables in `command` still have to be absolute: launchd resolves nothing through `PATH`, which only applies to what the job itself spawns.
 
 ## Repository layout
 
@@ -189,7 +201,7 @@ The Vite application chooses its transport at startup.
 .
 ├── apps/
 │   ├── cli/                  Bun CLI, launchctl adapter, local API
-│   └── web/                  Vite host and transport implementations
+│   └── web/                  Vite host and the local HTTP transport
 ├── packages/
 │   ├── core/                 Pure domain, validation, rendering, planning
 │   │   └── src/transport/    Shared transport contract and DTOs

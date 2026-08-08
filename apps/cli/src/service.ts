@@ -8,6 +8,7 @@ import {
   formatManifestJson,
   renderLaunchdJob,
   type Diagnostic,
+  type JobDefinition,
   type JobDoctorReport,
   type ManifestCompilation,
   type NormalizedJob,
@@ -33,6 +34,7 @@ import type {
   StatusResponse,
   StudioCapabilities,
   StudioTransport,
+  ToolPath,
   ValidationResponse,
 } from "@launchd-studio/core/transport";
 import {
@@ -78,11 +80,65 @@ export class StudioError extends Error {
   }
 }
 
+export const DEFAULT_WEB_UI_PORT = 43_210;
+
 export interface LocalStudioServiceOptions {
   readonly configPath: string;
   readonly homeDirectory?: string;
   readonly launchd?: LaunchdAdapter;
   readonly managedState?: ManagedStateStore;
+  readonly webUiPort?: number;
+}
+
+export const SELF_SERVICE_ID = "launchd-studio";
+
+// Running from source means the executable is Bun itself, so the entrypoint has
+// to travel with the command.
+function selfCommand(): ReadonlyArray<string> {
+  const executable = process.execPath;
+  return executable.endsWith("/bun") ? [executable, "run", Bun.main] : [executable];
+}
+
+function selfServiceJob(configPath: string, port: number): JobDefinition {
+  return {
+    kind: "service",
+    label: "dev.launchd-studio.web-ui",
+    description: "Launchd Studio",
+    comment: "Serves the Web UI on a fixed port so the bookmark keeps working.",
+    command: [
+      ...selfCommand(),
+      "web-ui",
+      "--config",
+      configPath,
+      "--port",
+      String(port),
+      "--no-open",
+    ],
+    start: "login",
+    restart: "on-failure",
+  };
+}
+
+// launchd hands a job only the system PATH, so an installed toolchain has to be
+// named explicitly before its executables can spawn anything.
+async function findToolPaths(homeDirectory: string): Promise<ReadonlyArray<ToolPath>> {
+  const found: ToolPath[] = [];
+  const miseData = process.env.MISE_DATA_DIR ?? join(homeDirectory, ".local", "share", "mise");
+  const shims = join(miseData, "shims");
+  if (await isDirectory(shims)) {
+    found.push({ name: "mise shims", directory: shims });
+  }
+  for (const prefix of [process.env.HOMEBREW_PREFIX, "/opt/homebrew", "/usr/local"]) {
+    if (prefix === undefined) {
+      continue;
+    }
+    const bin = join(prefix, "bin");
+    if (await isExecutableFile(join(bin, "brew"))) {
+      found.push({ name: "Homebrew", directory: bin });
+      break;
+    }
+  }
+  return found;
 }
 
 function jobNotFoundDiagnostic(jobId: string): Diagnostic {
@@ -132,10 +188,12 @@ export class LocalStudioService implements StudioTransport {
   readonly #launchd: LaunchdAdapter;
   readonly #managedState: ManagedStateStore;
   readonly #backupRoot: string;
+  readonly #webUiPort: number;
 
   constructor(options: LocalStudioServiceOptions) {
     this.#configPath = resolve(options.configPath);
     this.#homeDirectory = options.homeDirectory ?? homedir();
+    this.#webUiPort = options.webUiPort ?? DEFAULT_WEB_UI_PORT;
     this.#launchd = options.launchd ?? new LaunchdAdapter();
     this.#managedState =
       options.managedState ?? new ManagedStateStore(defaultManagedStatePath(this.#homeDirectory));
@@ -161,22 +219,14 @@ export class LocalStudioService implements StudioTransport {
   }
 
   async getCapabilities(): Promise<StudioCapabilities> {
-    const runtime = this.#launchd.supported;
     return {
-      mode: "local",
-      manifestRead: true,
-      manifestWrite: true,
-      validate: true,
-      format: true,
-      render: true,
-      explain: true,
-      plan: true,
-      apply: runtime,
-      remove: runtime,
-      status: true,
-      control: runtime,
-      logs: true,
-      doctor: true,
+      launchd: this.#launchd.supported,
+      toolPaths: await findToolPaths(this.#homeDirectory),
+      selfService: {
+        id: SELF_SERVICE_ID,
+        job: selfServiceJob(this.#configPath, this.#webUiPort),
+        url: `http://127.0.0.1:${this.#webUiPort}/`,
+      },
     };
   }
 

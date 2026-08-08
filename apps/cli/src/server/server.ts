@@ -13,6 +13,7 @@ export interface WebUiServerOptions {
   readonly transport: StudioTransport;
   readonly host: string;
   readonly port: number;
+  readonly token: string;
   readonly openBrowser: boolean;
   readonly allowRemote: boolean;
 }
@@ -27,12 +28,6 @@ export interface RunningWebUiServer {
 
 function isLoopbackHost(host: string): boolean {
   return host === "127.0.0.1" || host === "localhost" || host === "::1";
-}
-
-function createToken(): string {
-  const bytes = new Uint8Array(32);
-  crypto.getRandomValues(bytes);
-  return Buffer.from(bytes).toString("base64url");
 }
 
 function jsonResponse(value: unknown, status = 200): Response {
@@ -411,7 +406,7 @@ export function startWebUiServer(options: WebUiServerOptions): RunningWebUiServe
     );
   }
 
-  const token = createToken();
+  const token = options.token;
   const staticAssets = findStaticAssets();
   let server: ReturnType<typeof Bun.serve>;
   server = Bun.serve({

@@ -4,6 +4,7 @@ import type {
   ControlAction,
   JobStatusResponse,
   LogStream,
+  SelfServiceOffer,
   StudioCapabilities,
   StudioTransport,
 } from "@launchd-studio/core/transport";
@@ -47,7 +48,7 @@ export function LaunchdStudioApp({ transport }: LaunchdStudioAppProps) {
   const [draft, setDraft] = useState<ManifestDraft>(EMPTY_DRAFT);
   const [savedDraft, setSavedDraft] = useState<ManifestDraft>(EMPTY_DRAFT);
   const [savedSource, setSavedSource] = useState("");
-  const [manifestPath, setManifestPath] = useState<string | undefined>(undefined);
+  const [manifestPath, setManifestPath] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [diagnostics, setDiagnostics] = useState<ReadonlyArray<Diagnostic>>([]);
@@ -117,9 +118,7 @@ export function LaunchdStudioApp({ transport }: LaunchdStudioAppProps) {
       }
       setDraft(parsed.draft);
       setSavedDraft(parsed.draft);
-      if (loaded.nextCapabilities.status) {
-        await refreshStatus(loaded.manifest.source).catch(() => undefined);
-      }
+      await refreshStatus(loaded.manifest.source).catch(() => undefined);
     })();
     return () => {
       cancelled = true;
@@ -155,14 +154,18 @@ export function LaunchdStudioApp({ transport }: LaunchdStudioAppProps) {
     openJob(id);
   };
 
+  const addSelfService = (offer: SelfServiceOffer): void => {
+    setDraft(putJob(draft, offer.id, offer.job));
+    openJob(offer.id);
+    setNotice(`Install the staged change, then open ${offer.url}.`);
+  };
+
   const install = async (): Promise<void> => {
     await run("install", async () => {
       for (const id of removed) {
         await transport.removeJob(savedSource, id, false);
       }
-      if (capabilities?.manifestWrite === true) {
-        await transport.saveManifest(source);
-      }
+      await transport.saveManifest(source);
       const result = await transport.applyManifest(source);
       setDiagnostics(result.diagnostics);
       if (!result.valid) {
@@ -312,7 +315,7 @@ export function LaunchdStudioApp({ transport }: LaunchdStudioAppProps) {
               <p className="text-[12.5px] text-[var(--text-1)]">
                 {changed.length} {changed.length === 1 ? "change" : "changes"} not installed
               </p>
-              {capabilities.apply ? (
+              {capabilities.launchd ? (
                 <PressButton
                   variant="filled"
                   className="mt-2 w-full"
@@ -340,7 +343,7 @@ export function LaunchdStudioApp({ transport }: LaunchdStudioAppProps) {
             onClick={() => setSourceSheet(source)}
             className="ui-press w-full truncate rounded-lg px-2 py-1.5 text-left text-[11.5px] text-[var(--text-3)] hover:text-[var(--text-1)]"
           >
-            {manifestPath ?? "In-browser draft"}
+            {manifestPath}
           </button>
         </div>
       </aside>
@@ -350,11 +353,15 @@ export function LaunchdStudioApp({ transport }: LaunchdStudioAppProps) {
           draft={draft}
           statuses={statuses}
           changed={changed}
-          capabilities={capabilities}
           busy={busy !== null}
           onOpen={openJob}
           onAdd={addJob}
           onRefresh={() => void run("status", () => refreshStatus(source))}
+          onAddSelfService={
+            draft.jobs[capabilities.selfService.id] === undefined
+              ? () => addSelfService(capabilities.selfService)
+              : null
+          }
         />
       ) : (
         <Inspector
