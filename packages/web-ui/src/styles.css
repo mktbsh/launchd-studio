@@ -1,0 +1,41 @@
+@import "tailwindcss";
+@source "./";
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+:root {
+  color-scheme: dark;
+  font-family: var(--font-sans);
+  background: #020617;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-width: 320px;
+  background:
+    radial-gradient(circle at 20% -10%, rgb(30 41 59 / 0.9), transparent 38rem),
+    #020617;
+}
+
+button,
+select,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: rgb(56 189 248 / 0.28);
+}

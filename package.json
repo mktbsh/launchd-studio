@@ -1,0 +1,25 @@
+{
+  "name": "launchd-studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.3.14",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "bun run --filter @launchd-studio/web dev",
+    "dev:cli": "bun run --filter @launchd-studio/cli dev",
+    "build:web": "bun run --filter @launchd-studio/web build",
+    "build:binary": "bun run scripts/build-binary.ts",
+    "build": "bun run build:binary",
+    "typecheck": "bun run --filter '*' typecheck",
+    "test": "bun test",
+    "check": "bun run typecheck && bun run test && bun run build:web"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "typescript": "^7.0.2"
+  }
+}
