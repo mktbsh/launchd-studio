@@ -2,7 +2,7 @@ import {
   compileManifest,
   DEFAULT_MANIFEST_SOURCE,
   explainLaunchdJob,
-  formatJsonc,
+  formatManifestJson,
   renderLaunchdJob,
 } from "@launchd-studio/core";
 import type {
@@ -72,7 +72,7 @@ export class BrowserStudioTransport implements StudioTransport {
   }
 
   async formatManifest(source: string): Promise<FormatResponse> {
-    const result = formatJsonc(source);
+    const result = formatManifestJson(source);
     return result.formatted === undefined
       ? { valid: false, diagnostics: result.diagnostics }
       : { valid: true, diagnostics: result.diagnostics, source: result.formatted };

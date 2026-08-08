@@ -16,18 +16,19 @@ if (root === null) {
   throw new Error("The root element is missing.");
 }
 
-const fragmentToken = tokenFromLocation(window.location);
-if (fragmentToken !== null) {
-  storeToken(window.sessionStorage, fragmentToken);
-  clearTokenFragment();
+function mountStudio() {
+  const fragmentToken = tokenFromLocation(window.location);
+  if (fragmentToken !== null) {
+    storeToken(window.sessionStorage, fragmentToken);
+    clearTokenFragment();
+  }
+  const token = fragmentToken ?? loadStoredToken(window.sessionStorage);
+  const transport = token === null
+    ? new BrowserStudioTransport()
+    : new HttpStudioTransport(token);
+  return <LaunchdStudioApp transport={transport} />;
 }
-const token = fragmentToken ?? loadStoredToken(window.sessionStorage);
-const transport = token === null
-  ? new BrowserStudioTransport()
-  : new HttpStudioTransport(token);
 
 createRoot(root).render(
-  <StrictMode>
-    <LaunchdStudioApp transport={transport} />
-  </StrictMode>,
+  <StrictMode>{mountStudio()}</StrictMode>,
 );
