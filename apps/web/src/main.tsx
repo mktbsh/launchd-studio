@@ -2,7 +2,6 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { LaunchdStudioApp } from "@launchd-studio/web-ui";
 import "@launchd-studio/web-ui/styles.css";
-import { BrowserStudioTransport } from "./browser-transport";
 import {
   clearTokenFragment,
   HttpStudioTransport,
@@ -23,10 +22,15 @@ function mountStudio() {
     clearTokenFragment();
   }
   const token = fragmentToken ?? loadStoredToken(window.sessionStorage);
-  const transport = token === null
-    ? new BrowserStudioTransport()
-    : new HttpStudioTransport(token);
-  return <LaunchdStudioApp transport={transport} />;
+  if (token === null) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-8 text-center text-[13px] text-[var(--text-3)]">
+        Open this application through <code className="mx-1 font-mono">launchd-studio web-ui</code>,
+        which supplies the local API token.
+      </div>
+    );
+  }
+  return <LaunchdStudioApp transport={new HttpStudioTransport(token)} />;
 }
 
 createRoot(root).render(

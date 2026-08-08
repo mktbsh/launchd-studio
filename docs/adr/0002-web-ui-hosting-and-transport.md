@@ -24,6 +24,12 @@ The Vite production output is embedded into the compiled Bun CLI as file-loader 
 
 Bun 1.3.14 does not provide the former `--asset` command shape used by the initial source delivery. The build now passes generated Web files as argv entrypoints with `.html` and `.js` file loaders, and runtime serving uses the embedded file names to preserve the Vite `assets/` URL paths.
 
+## Amendment (2026-08-09, Claude Opus 5)
+
+The browser-only transport is removed. `apps/web` ships a single HTTP transport, and the application renders a pointer back to `launchd-studio web-ui` when no bearer token is present. `StudioCapabilities` collapses to `{ launchd: boolean }`, because every other capability was constant once the browser mode disappeared, and `ManifestSourceResponse.path` becomes required.
+
+Preview-only editing was never able to install anything, and keeping it forced a second transport implementation plus twelve capability flags through the whole UI. The public Web application in the original context is dropped rather than degraded.
+
 # Consequences
 
 One UI supports both modes without coupling React components to fetch, Bun, or launchctl. The local server is mutation-capable, so remote binding remains an explicit unsafe-by-default option.
