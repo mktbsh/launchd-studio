@@ -41,7 +41,7 @@ describe("local studio service state reconciliation", () => {
   test("reloads an untracked loaded definition and accepts the tracked definition", async () => {
     const home = await mkdtemp(join(tmpdir(), "launchd-studio-home-"));
     try {
-      const configPath = join(home, "launchd-studio.jsonc");
+      const configPath = join(home, "launchd-studio.json");
       const state = new ManagedStateStore(join(home, "state.json"));
       const service = new LocalStudioService({
         configPath,
@@ -78,7 +78,7 @@ describe("local studio service state reconciliation", () => {
   test("removes a tracked job after it was deleted from the manifest", async () => {
     const home = await mkdtemp(join(tmpdir(), "launchd-studio-home-"));
     try {
-      const configPath = join(home, "launchd-studio.jsonc");
+      const configPath = join(home, "launchd-studio.json");
       const state = new ManagedStateStore(join(home, "state.json"));
       const service = new LocalStudioService({
         configPath,

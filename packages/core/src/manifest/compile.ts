@@ -1,5 +1,5 @@
 import type { ManifestCompilation, NormalizeContext } from "../domain";
-import { parseJsonc } from "./jsonc";
+import { parseManifestJson } from "./json";
 import { normalizeManifest } from "./normalize";
 import { validateManifestValue } from "./validate";
 
@@ -7,7 +7,7 @@ export function compileManifest(
   source: string,
   context: NormalizeContext,
 ): ManifestCompilation {
-  const parsed = parseJsonc(source);
+  const parsed = parseManifestJson(source);
   if (parsed.value === undefined) {
     return {
       valid: false,

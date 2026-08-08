@@ -12,12 +12,12 @@ describe("CLI arguments", () => {
       "render",
       "local-api",
       "--config",
-      "./launchd.jsonc",
+      "./launchd.json",
       "--json",
     ]);
     expect(parsed.command).toBe("render");
     expect(parsed.positionals).toEqual(["local-api"]);
-    expect(stringOption(parsed.options, "config")).toBe("./launchd.jsonc");
+    expect(stringOption(parsed.options, "config")).toBe("./launchd.json");
     expect(booleanOption(parsed.options, "json")).toBe(true);
   });
 

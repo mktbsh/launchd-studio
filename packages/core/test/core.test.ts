@@ -3,29 +3,38 @@ import {
   compileManifest,
   createManifestPlan,
   DEFAULT_MANIFEST_SOURCE,
-  formatJsonc,
+  formatManifestJson,
   parseDurationSeconds,
-  parseJsonc,
+  parseManifestJson,
   planLaunchdJob,
   renderLaunchdJob,
 } from "../src";
 
 const context = { homeDirectory: "/Users/tester" } as const;
 
-describe("JSONC", () => {
-  test("parses comments and trailing commas", () => {
-    const result = parseJsonc(`{
-      // comment
-      "value": [1, 2,],
-    }`);
-    expect(result.diagnostics).toHaveLength(0);
-    expect(result.value).toEqual({ value: [1, 2] });
+describe("manifest JSON", () => {
+  test("rejects comments and trailing commas as syntax errors", () => {
+    for (const source of [`{\n  // comment\n  "value": 1\n}`, `{\n  "value": [1, 2,]\n}`]) {
+      const result = parseManifestJson(source);
+      expect(result.value).toBeUndefined();
+      expect(result.diagnostics).toHaveLength(1);
+      expect(result.diagnostics[0]?.code).toBe("json.syntax");
+    }
   });
 
-  test("formats without deleting comments", () => {
-    const result = formatJsonc(`{"version":1,// keep\n"jobs":{},}`);
-    expect(result.formatted).toContain("// keep");
-    expect(parseJsonc(result.formatted ?? "").value).toEqual({ version: 1, jobs: {} });
+  test("locates a syntax error when the engine reports a position", () => {
+    const result = parseManifestJson(`{\n  "value": 1\n  "other": 2\n}`);
+    const diagnostic = result.diagnostics[0];
+    expect(diagnostic?.code).toBe("json.syntax");
+    // JavaScriptCore omits the offset; only assert the mapping when V8 supplies one.
+    if (diagnostic !== undefined && diagnostic.offset !== undefined && diagnostic.offset > 0) {
+      expect(diagnostic.line).toBe(3);
+    }
+  });
+
+  test("formats to two-space indentation with a trailing newline", () => {
+    const result = formatManifestJson(`{"version":1,"jobs":{}}`);
+    expect(result.formatted).toBe(`{\n  "version": 1,\n  "jobs": {}\n}\n`);
   });
 });
 

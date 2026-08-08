@@ -34,17 +34,17 @@ const SCHEMA_FILENAME = "launchd-studio.schema.json";
 
 const HELP = `launchd-studio ${VERSION}
 
-Intent-based JSONC management for macOS user LaunchAgents.
+Intent-based JSON management for macOS user LaunchAgents.
 
 Usage:
   launchd-studio <command> [arguments] [options]
 
 Commands:
-  init [path]                 Create a starter JSONC manifest
+  init [path]                 Create a starter JSON manifest
   validate                    Validate syntax and job semantics
-  format                      Format JSONC; use --write to save
+  format                      Format the manifest; use --write to save
   render [job]                Render generated launchd plist XML
-  explain [job]               Explain JSONC-to-launchd mappings
+  explain [job]               Explain manifest-to-launchd mappings
   plan [job]                  Compare manifest, plist files, and launchd state
   apply [job]                 Write and register LaunchAgents
   remove <job>                Unload a job and remove its generated plist
@@ -80,7 +80,7 @@ async function findConfigPath(explicitPath?: string): Promise<string> {
 
   let directory = process.cwd();
   while (true) {
-    for (const filename of ["launchd-studio.jsonc", ".launchd-studio.jsonc"]) {
+    for (const filename of ["launchd-studio.json", ".launchd-studio.json"]) {
       const candidate = join(directory, filename);
       if (await pathExists(candidate)) {
         return candidate;
@@ -88,7 +88,7 @@ async function findConfigPath(explicitPath?: string): Promise<string> {
     }
     const parent = dirname(directory);
     if (parent === directory) {
-      return resolve(process.cwd(), "launchd-studio.jsonc");
+      return resolve(process.cwd(), "launchd-studio.json");
     }
     directory = parent;
   }

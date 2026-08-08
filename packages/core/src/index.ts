@@ -2,7 +2,7 @@ export * from "./domain";
 export * from "./launchd/render";
 export * from "./manifest/compile";
 export * from "./manifest/duration";
-export * from "./manifest/jsonc";
+export * from "./manifest/json";
 export * from "./manifest/naming";
 export * from "./manifest/normalize";
 export * from "./manifest/sample";

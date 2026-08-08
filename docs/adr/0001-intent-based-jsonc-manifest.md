@@ -1,9 +1,14 @@
 ---
 title: Intent-based JSONC manifest for user LaunchAgents
-status: accepted
+status: superseded
 date: 2026-08-08
 model: GPT-5.6 Pro
+superseded-by: 0005-plain-json-manifest-with-comment-field
 ---
+
+> Superseded in part by ADR 0005. The two job kinds, `scope: "user"`, argv-only
+> commands, and unknown-property errors all stand. The JSONC syntax does not:
+> the manifest is plain JSON, and rationale lives in a `comment` field.
 
 # Context
 

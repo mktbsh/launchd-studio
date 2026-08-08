@@ -47,6 +47,7 @@ export interface BaseJobDefinition {
   readonly kind: JobKind;
   readonly label?: string;
   readonly description?: string;
+  readonly comment?: string;
   readonly scope?: JobScope;
   readonly command: ReadonlyArray<string>;
   readonly workingDirectory?: string;
@@ -88,6 +89,7 @@ export interface NormalizedBaseJob {
   readonly kind: JobKind;
   readonly label: string;
   readonly description?: string;
+  readonly comment?: string;
   readonly scope: "user";
   readonly command: readonly [string, ...string[]];
   readonly workingDirectory?: string;

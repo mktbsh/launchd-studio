@@ -15,7 +15,7 @@ describe("managed state", () => {
         label: "dev.example.api",
         plistPath: "/Users/test/Library/LaunchAgents/dev.example.api.plist",
         plistHash: hashPlist("plist"),
-        manifestPath: "/Users/test/launchd-studio.jsonc",
+        manifestPath: "/Users/test/launchd-studio.json",
         appliedAt: "2026-08-08T00:00:00.000Z",
       } as const;
 

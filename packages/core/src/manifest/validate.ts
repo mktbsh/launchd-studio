@@ -394,6 +394,7 @@ function validateJob(
     "kind",
     "label",
     "description",
+    "comment",
     "scope",
     "command",
     "workingDirectory",
@@ -443,6 +444,7 @@ function validateJob(
   }
 
   const description = readOptionalString(value, "description", path, diagnostics);
+  const comment = readOptionalString(value, "comment", path, diagnostics);
   if (value.scope !== undefined && value.scope !== "user") {
     addDiagnostic(
       diagnostics,
@@ -469,6 +471,7 @@ function validateJob(
     kind,
     ...(label !== undefined ? { label } : {}),
     ...(description !== undefined ? { description } : {}),
+    ...(comment !== undefined ? { comment } : {}),
     ...(value.scope !== undefined ? { scope: "user" as const } : {}),
     command,
     ...(workingDirectory !== undefined ? { workingDirectory } : {}),

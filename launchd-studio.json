@@ -1,12 +1,12 @@
 {
-  "$schema": "../schemas/manifest.schema.json",
+  "$schema": "./launchd-studio.schema.json",
   "version": 1,
   "jobs": {
-    // A process expected to stay alive.
     "local-api": {
       "kind": "service",
       "label": "dev.example.local-api",
       "description": "Local development API",
+      "comment": "Long-running process. No shell is inserted around this command.",
       "command": [
         "/opt/homebrew/bin/bun",
         "run",
@@ -19,28 +19,21 @@
         "NODE_ENV": "development"
       }
     },
-
-    // A finite process executed every day at 03:00 local time.
     "daily-backup": {
       "kind": "task",
       "label": "dev.example.daily-backup",
-      "command": ["~/.local/bin/backup"],
+      "comment": "Finite job. Calendar fields omitted from an entry act as wildcards.",
+      "command": [
+        "~/.local/bin/backup"
+      ],
       "schedule": {
         "type": "calendar",
         "entries": [
-          { "hour": 3, "minute": 0 }
+          {
+            "hour": 3,
+            "minute": 0
+          }
         ]
-      }
-    },
-
-    // Interval schedules are translated to launchd StartInterval.
-    "refresh-cache": {
-      "kind": "task",
-      "label": "dev.example.refresh-cache",
-      "command": ["~/.local/bin/refresh-cache"],
-      "schedule": {
-        "type": "interval",
-        "every": "15m"
       }
     }
   }

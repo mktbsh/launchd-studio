@@ -5,7 +5,7 @@ import {
   createManifestPlan,
   DEFAULT_MANIFEST_SOURCE,
   explainLaunchdJob,
-  formatJsonc,
+  formatManifestJson,
   renderLaunchdJob,
   type Diagnostic,
   type JobDoctorReport,
@@ -221,7 +221,7 @@ export class LocalStudioService implements StudioTransport {
   }
 
   async formatManifest(source: string): Promise<FormatResponse> {
-    const result = formatJsonc(source);
+    const result = formatManifestJson(source);
     return result.formatted === undefined
       ? {
           valid: false,

@@ -60,6 +60,7 @@ function normalizeJob(
     id,
     label,
     ...(definition.description !== undefined ? { description: definition.description } : {}),
+    ...(definition.comment !== undefined ? { comment: definition.comment } : {}),
     scope: "user" as const,
     command,
     ...(definition.workingDirectory !== undefined

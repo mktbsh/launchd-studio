@@ -83,6 +83,9 @@
         "description": {
           "type": "string"
         },
+        "comment": {
+          "type": "string"
+        },
         "scope": {
           "const": "user"
         },
@@ -117,6 +120,9 @@
           "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
         },
         "description": {
+          "type": "string"
+        },
+        "comment": {
           "type": "string"
         },
         "scope": {
@@ -272,6 +278,9 @@
           "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
         },
         "description": {
+          "type": "string"
+        },
+        "comment": {
           "type": "string"
         },
         "scope": {
