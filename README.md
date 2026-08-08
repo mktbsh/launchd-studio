@@ -1,6 +1,6 @@
 # Launchd Studio
 
-Launchd Studio is an intent-based JSONC compiler, CLI, and Web UI for macOS user LaunchAgents.
+Launchd Studio is an intent-based JSON compiler, CLI, and Web UI for macOS user LaunchAgents.
 
 Instead of editing plist keys directly, define either a long-running `service` or a finite `task`. The tool validates the intent, renders deterministic plist XML, explains each mapping, compares desired/file/runtime state, and applies the result through `launchctl`.
 
@@ -8,7 +8,7 @@ Instead of editing plist keys directly, define either a long-running `service` o
 
 ## Features
 
-- JSONC input with comments and trailing commas
+- plain JSON input with a per-job `comment` field for rationale
 - JSON Schema for editor completion
 - strict unknown-property and semantic validation
 - deterministic plist rendering
@@ -56,7 +56,7 @@ Create a manifest:
 bun run apps/cli/src/main.ts init
 ```
 
-`init` writes both `launchd-studio.jsonc` and `launchd-studio.schema.json` so editor completion works without relying on a hosted schema URL.
+`init` writes both `launchd-studio.json` and `launchd-studio.schema.json` so editor completion works without relying on a hosted schema URL.
 
 Validate, inspect, and apply it:
 
@@ -75,11 +75,11 @@ bun run build:web
 bun run apps/cli/src/main.ts web-ui
 ```
 
-The CLI searches the current directory and parents for `launchd-studio.jsonc` or `.launchd-studio.jsonc`. Override it with `--config`.
+The CLI searches the current directory and parents for `launchd-studio.json` or `.launchd-studio.json`. Override it with `--config`.
 
 ## Manifest
 
-```jsonc
+```json
 {
   "$schema": "./launchd-studio.schema.json",
   "version": 1,
@@ -87,6 +87,8 @@ The CLI searches the current directory and parents for `launchd-studio.jsonc` or
     "local-api": {
       "kind": "service",
       "label": "dev.example.local-api",
+      "description": "Local development API",
+      "comment": "A process expected to stay alive.",
       "command": [
         "/opt/homebrew/bin/bun",
         "run",
@@ -112,13 +114,15 @@ The CLI searches the current directory and parents for `launchd-studio.jsonc` or
 }
 ```
 
+`description` is a short human-readable name; `comment` records why the job is set up the way it is. Neither affects the generated plist, and both survive a Web UI round trip.
+
 Executable and path values must be absolute or begin with `~/`. Launchd Studio does not insert `sh -c` and does not inherit an interactive shell's PATH.
 
 ### Defaults
 
 A service defaults to:
 
-```jsonc
+```json
 {
   "start": "login",
   "restart": "on-failure",
@@ -143,10 +147,10 @@ A missing label is derived as `dev.launchd-studio.<job-id>` unless the job ID al
 
 ```text
 init [path]                 Create a starter manifest
-validate                    Validate JSONC and semantics
-format [--write]            Format JSONC while retaining comments
+validate                    Validate syntax and semantics
+format [--write]            Format the manifest
 render [job]                Render plist XML
-explain [job]               Explain JSONC-to-launchd mappings
+explain [job]               Explain manifest-to-launchd mappings
 plan [job]                  Compare desired, file, and runtime state
 apply [job]                 Write and register LaunchAgents
 remove <job>                Unload and remove a generated plist
@@ -168,7 +172,7 @@ After a successful registration, Launchd Studio stores only ownership metadata a
 ~/Library/Application Support/launchd-studio/state.json
 ```
 
-The JSONC manifest remains the source of truth. The state file lets `plan` conservatively reload a loaded definition that was not registered by the current manifest, and lets `remove <job>` clean up a previously applied job even after that job was deleted from the manifest.
+The JSON manifest remains the source of truth. The state file lets `plan` conservatively reload a loaded definition that was not registered by the current manifest, and lets `remove <job>` clean up a previously applied job even after that job was deleted from the manifest.
 
 ## Web modes
 
