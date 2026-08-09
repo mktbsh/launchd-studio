@@ -1,5 +1,14 @@
 # @launchd-studio/web
 
+## 0.1.1
+
+### Patch Changes
+
+- 646240a: Use the `horse.hsb.launchd-studio` LaunchAgent namespace and create new default manifests in macOS Application Support.
+- Updated dependencies [646240a]
+  - @launchd-studio/core@0.1.1
+  - @launchd-studio/web-ui@0.1.1
+
 ## 0.1.0
 
 ### Minor Changes
