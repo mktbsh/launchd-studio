@@ -26,6 +26,18 @@ Instead of editing plist keys directly, define either a long-running `service` o
 
 Development requires Bun 1.3.x. Runtime mutation commands require macOS and a logged-in GUI user session. Validation and rendering are cross-platform.
 
+## Install from GitHub Releases
+
+Install the latest signed and notarized binary on macOS:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mktbsh/launchd-studio/main/install.sh | bash
+```
+
+The installer puts the binary in `~/.local/bin`. Set `INSTALL_DIR` to use another directory.
+
+Each GitHub Release also includes a gzip-compressed binary and its SHA-256 checksum.
+
 ## Install and verify
 
 ```bash

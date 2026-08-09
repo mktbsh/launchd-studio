@@ -59,7 +59,7 @@ jobs:
           test -n "$signing_identity"
           codesign --force --options runtime --timestamp --sign "$signing_identity" "$BINARY"
           codesign --verify --strict --verbose=2 "$BINARY"
-      - name: Package binary
+      - name: Package binary for notarization
         env:
           ARCHIVE: dist/launchd-studio-darwin-${{ matrix.architecture }}.zip
           BINARY: dist/launchd-studio-darwin-${{ matrix.architecture }}
@@ -84,10 +84,21 @@ jobs:
             --key-id "$APPLE_NOTARY_KEY_ID" \
             --issuer "$APPLE_NOTARY_ISSUER_ID" \
             --wait
+      - name: Compress binary and create checksum
+        env:
+          BINARY: dist/launchd-studio-darwin-${{ matrix.architecture }}
+          ARCHIVE: dist/launchd-studio-darwin-${{ matrix.architecture }}.gz
+          CHECKSUM: dist/launchd-studio-darwin-${{ matrix.architecture }}.gz.sha256
+        run: |
+          set -euo pipefail
+          gzip -c "$BINARY" > "$ARCHIVE"
+          (cd "$(dirname "$ARCHIVE")" && shasum -a 256 "$(basename "$ARCHIVE")" > "$(basename "$CHECKSUM")")
       - uses: actions/upload-artifact@v7
         with:
           name: release-${{ matrix.architecture }}
-          path: dist/launchd-studio-darwin-${{ matrix.architecture }}.zip
+          path: |
+            dist/launchd-studio-darwin-${{ matrix.architecture }}.gz
+            dist/launchd-studio-darwin-${{ matrix.architecture }}.gz.sha256
           if-no-files-found: error
           retention-days: 1
 
@@ -105,4 +116,4 @@ jobs:
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
-        run: gh release create "$TAG" dist/*.zip --verify-tag --generate-notes --title "$TAG"
+        run: gh release create "$TAG" dist/*.gz dist/*.gz.sha256 --verify-tag --generate-notes --title "$TAG"
