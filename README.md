@@ -39,6 +39,17 @@ The installer puts the binary in `~/.local/bin`. Set `INSTALL_DIR` to use anothe
 
 Each GitHub Release also includes a gzip-compressed binary and its SHA-256 checksum.
 
+## Install with Homebrew
+
+Install the signed and notarized Cask from the [mktbsh/homebrew-tap](https://github.com/mktbsh/homebrew-tap) tap:
+
+```bash
+brew tap mktbsh/tap
+brew install --cask launchd-studio
+```
+
+Homebrew-managed installations update with `brew upgrade --cask launchd-studio`.
+
 ## Install and verify
 
 ```bash
