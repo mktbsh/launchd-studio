@@ -58,6 +58,27 @@ describe("self-update", () => {
     expect(result.latestVersion).toBe("0.0.5");
   });
 
+  test("does not replace a Homebrew-managed binary", async () => {
+    let requestCount = 0;
+    const result = await updateSelf({
+      currentVersion: "0.0.5",
+      install: true,
+      platform: "darwin-arm64",
+      currentPath: "/opt/homebrew/Caskroom/launchd-studio/0.0.5/launchd-studio",
+      fetcher: async () => {
+        requestCount += 1;
+        return new Response(
+          JSON.stringify({ ...MANIFEST, version: "0.0.6", tag: "v0.0.6" }),
+          { status: 200 },
+        );
+      },
+    });
+
+    expect(result.status).toBe("unsupported");
+    expect(result.reason).toContain("brew upgrade --cask launchd-studio");
+    expect(requestCount).toBe(1);
+  });
+
   test("verifies and atomically installs a downloaded artifact", async () => {
     const directory = await mkdtemp(join(tmpdir(), "launchd-studio-update-"));
     try {
