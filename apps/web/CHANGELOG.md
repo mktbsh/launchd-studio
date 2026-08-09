@@ -1,5 +1,14 @@
 # @launchd-studio/web
 
+## 0.1.2
+
+### Patch Changes
+
+- 2675319: Use one canonical macOS Application Support manifest and remove cwd-dependent configuration selection.
+- Updated dependencies [2675319]
+  - @launchd-studio/core@0.1.2
+  - @launchd-studio/web-ui@0.1.2
+
 ## 0.1.1
 
 ### Patch Changes
