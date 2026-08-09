@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   build:
+    environment: release
     strategy:
       fail-fast: true
       matrix:
@@ -31,10 +32,62 @@ jobs:
       - run: ./dist/launchd-studio version
       - name: Name binary
         run: mv dist/launchd-studio "dist/launchd-studio-darwin-${{ matrix.architecture }}"
-      - uses: actions/upload-artifact@v4
+      - name: Sign binary
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          BINARY: dist/launchd-studio-darwin-${{ matrix.architecture }}
+        run: |
+          set -euo pipefail
+          test -n "$APPLE_CERTIFICATE_BASE64"
+          test -n "$APPLE_CERTIFICATE_PASSWORD"
+
+          certificate_path="$RUNNER_TEMP/developer-id-application.p12"
+          keychain_path="$RUNNER_TEMP/launchd-studio-signing.keychain-db"
+          keychain_password="$(openssl rand -hex 32)"
+          trap 'security delete-keychain "$keychain_path" >/dev/null 2>&1 || true' EXIT
+
+          printf '%s' "$APPLE_CERTIFICATE_BASE64" | base64 -D > "$certificate_path"
+          security create-keychain -p "$keychain_password" "$keychain_path"
+          security set-keychain-settings -lut 21600 "$keychain_path"
+          security unlock-keychain -p "$keychain_password" "$keychain_path"
+          security import "$certificate_path" -P "$APPLE_CERTIFICATE_PASSWORD" -f pkcs12 -t cert -k "$keychain_path" -A
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$keychain_password" "$keychain_path"
+          security list-keychains -d user -s "$keychain_path"
+
+          signing_identity="$(security find-identity -v -p codesigning "$keychain_path" | awk -F'"' '/Developer ID Application:/ { print $2; exit }')"
+          test -n "$signing_identity"
+          codesign --force --options runtime --timestamp --sign "$signing_identity" "$BINARY"
+          codesign --verify --strict --verbose=2 "$BINARY"
+      - name: Package binary
+        env:
+          ARCHIVE: dist/launchd-studio-darwin-${{ matrix.architecture }}.zip
+          BINARY: dist/launchd-studio-darwin-${{ matrix.architecture }}
+        run: ditto -c -k --sequesterRsrc --keepParent "$BINARY" "$ARCHIVE"
+      - name: Notarize package
+        env:
+          APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
+          APPLE_NOTARY_KEY_BASE64: ${{ secrets.APPLE_NOTARY_KEY_BASE64 }}
+          APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
+          ARCHIVE: dist/launchd-studio-darwin-${{ matrix.architecture }}.zip
+        run: |
+          set -euo pipefail
+          test -n "$APPLE_NOTARY_ISSUER_ID"
+          test -n "$APPLE_NOTARY_KEY_BASE64"
+          test -n "$APPLE_NOTARY_KEY_ID"
+
+          key_path="$RUNNER_TEMP/AuthKey_${APPLE_NOTARY_KEY_ID}.p8"
+          printf '%s' "$APPLE_NOTARY_KEY_BASE64" | base64 -D > "$key_path"
+          trap 'rm -f "$key_path"' EXIT
+          xcrun notarytool submit "$ARCHIVE" \
+            --key "$key_path" \
+            --key-id "$APPLE_NOTARY_KEY_ID" \
+            --issuer "$APPLE_NOTARY_ISSUER_ID" \
+            --wait
+      - uses: actions/upload-artifact@v7
         with:
           name: release-${{ matrix.architecture }}
-          path: dist/launchd-studio-darwin-${{ matrix.architecture }}
+          path: dist/launchd-studio-darwin-${{ matrix.architecture }}.zip
           if-no-files-found: error
           retention-days: 1
 
@@ -42,7 +95,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: release-*
           path: dist
@@ -52,4 +105,4 @@ jobs:
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
-        run: gh release create "$TAG" dist/* --verify-tag --generate-notes --title "$TAG"
+        run: gh release create "$TAG" dist/*.zip --verify-tag --generate-notes --title "$TAG"
