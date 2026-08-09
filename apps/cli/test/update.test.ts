@@ -7,6 +7,7 @@ import { join } from "node:path";
 import {
   compareVersions,
   currentUpdatePlatform,
+  isHomebrewManagedPath,
   parseUpdateManifest,
   updateArtifactUrl,
   updateSelf,
@@ -41,6 +42,9 @@ describe("self-update", () => {
     expect(currentUpdatePlatform("darwin", "arm64")).toBe("darwin-arm64");
     expect(currentUpdatePlatform("darwin", "x64")).toBe("darwin-x64");
     expect(currentUpdatePlatform("linux", "x64")).toBeNull();
+    expect(isHomebrewManagedPath("/opt/homebrew/Cellar/launchd-studio/0.0.5/bin/launchd-studio")).toBe(true);
+    expect(isHomebrewManagedPath("/opt/homebrew/Caskroom/launchd-studio/0.0.5/launchd-studio")).toBe(true);
+    expect(isHomebrewManagedPath("/Users/test/.local/bin/launchd-studio")).toBe(false);
   });
 
   test("checks the feed without downloading when the update is current", async () => {

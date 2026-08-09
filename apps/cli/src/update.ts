@@ -289,6 +289,10 @@ function isBunRuntime(path: string): boolean {
   return executable === "bun" || executable === "bun.exe";
 }
 
+export function isHomebrewManagedPath(path: string): boolean {
+  return /\/(?:Cellar|Caskroom)\/[^/]+\/[^/]+(?:\/|$)/u.test(path);
+}
+
 export function isCompiledMacExecutable(): boolean {
   return (
     process.platform === "darwin" &&
@@ -383,6 +387,15 @@ export async function updateSelf(options: UpdateOptions): Promise<UpdateResult> 
   }
 
   const currentPath = options.currentPath ?? (await defaultExecutablePath());
+  if (isHomebrewManagedPath(currentPath)) {
+    return {
+      status: "unsupported",
+      currentVersion: options.currentVersion,
+      latestVersion: manifest.version,
+      platform,
+      reason: "Homebrew manages this installation; run brew upgrade --cask launchd-studio.",
+    };
+  }
   const bytes = await downloadArtifact(
     updateArtifactUrl(manifest.tag, platform),
     artifact,

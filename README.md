@@ -190,7 +190,7 @@ After a successful registration, Launchd Studio stores only ownership metadata a
 
 The JSON manifest remains the source of truth. The state file lets `plan` conservatively reload a loaded definition that was not registered by the current manifest, and lets `remove <job>` clean up a previously applied job even after that job was deleted from the manifest.
 
-`update` checks the latest GitHub Release for the current macOS architecture. It verifies the gzip size and SHA-256, the downloaded executable's code signature and Team ID, then replaces the current binary atomically. `update --check` only reports availability. A compiled binary started with `web-ui` performs the same check once before serving; use `web-ui --no-update` to skip it. Source execution and unsupported platforms do not self-update.
+`update` checks the latest GitHub Release for the current macOS architecture. It verifies the gzip size and SHA-256, the downloaded executable's code signature and Team ID, then replaces the current binary atomically. `update --check` only reports availability. A compiled binary started with `web-ui` performs the same check once before serving; use `web-ui --no-update` to skip it. Homebrew-managed installations are updated with `brew upgrade --cask launchd-studio` and do not replace their Caskroom binary in place. Source execution and unsupported platforms do not self-update.
 
 ## Web UI
 
