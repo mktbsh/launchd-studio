@@ -1,5 +1,11 @@
 # @launchd-studio/core
 
+## 0.1.0
+
+### Minor Changes
+
+- dc1c748: Ship a signed Launchd Studio app bundle so the self-service LaunchAgent is displayed as Launchd Studio in macOS background activity settings.
+
 ## 0.0.8
 
 ### Patch Changes
