@@ -86,6 +86,8 @@ launchd-studio init
 
 `init` writes both `~/Library/Application Support/launchd-studio/launchd-studio.json` and its `launchd-studio.schema.json` sidecar so editor completion works without relying on a hosted schema URL. The generated manifest has no jobs; `examples/services.json` shows the shape of a populated one.
 
+This user manifest is the only manifest used by the CLI, regardless of the current working directory.
+
 Validate, inspect, and apply it:
 
 ```bash
@@ -103,7 +105,7 @@ bun run build:web
 bun run apps/cli/src/main.ts web-ui
 ```
 
-The CLI searches the current directory and parents for `launchd-studio.json` or `.launchd-studio.json`, then falls back to macOS Application Support. Override it with `--config`.
+The CLI always reads the user manifest from macOS Application Support, so starting `web-ui` from a repository cannot select a project-local manifest by accident.
 
 ## Manifest
 
@@ -176,7 +178,7 @@ A missing label is derived as `horse.hsb.launchd-studio.<job-id>` unless the job
 ## CLI
 
 ```text
-init [path]                 Create a starter manifest
+init                        Create the user manifest
 validate                    Validate syntax and semantics
 format [--write]            Format the manifest
 render [job]                Render plist XML
@@ -215,27 +217,30 @@ The Vite application runs only against the localhost API served by `web-ui`; it 
 
 ### Run it at login
 
-The Overview offers **Run Launchd Studio at login**, which stages a `launchd-studio` service running `web-ui` on the fixed port against the current manifest. Nothing is written until you install the staged change. The signed attribution app associates this reserved LaunchAgent with the Launchd Studio name in macOS background activity settings. The bookmark is `http://127.0.0.1:43210/`; the token is added on first visit from the CLI-opened URL.
+The Overview offers **Run Launchd Studio at login**, which stages a `launchd-studio` service running `web-ui` on the fixed port against the user manifest. The generated LaunchAgent starts `web-ui` without a manifest argument, so it uses the same canonical file regardless of its working directory. Nothing is written until you install the staged change. The signed attribution app associates this reserved LaunchAgent with the Launchd Studio name in macOS background activity settings. The bookmark is `http://127.0.0.1:43210/`; the token is added on first visit from the CLI-opened URL.
 
 ### Reset an older self-service setup
 
-If an older setup still uses `dev.launchd-studio.web-ui`, stop it before applying the new self-service definition:
+If an older setup still uses `dev.launchd-studio.web-ui` or a project-local manifest, migrate its jobs into the user manifest. Before applying the commands below, edit the copied manifest so the self-service job uses `horse.hsb.launchd-studio.web-ui` and its command does not contain the old `--config` argument or project path:
 
 ```bash
 old_manifest="$PWD/launchd-studio.json"
 new_manifest="$HOME/Library/Application Support/launchd-studio/launchd-studio.json"
-
-launchd-studio remove launchd-studio --config "$old_manifest" || true
-launchctl bootout "gui/$(id -u)/dev.launchd-studio.web-ui" 2>/dev/null || true
-rm -f "$HOME/Library/LaunchAgents/dev.launchd-studio.web-ui.plist"
 
 mkdir -p "$(dirname "$new_manifest")"
 cp "$old_manifest" "$new_manifest"
 if [ -f "$PWD/launchd-studio.schema.json" ]; then
   cp "$PWD/launchd-studio.schema.json" "$(dirname "$new_manifest")/launchd-studio.schema.json"
 fi
+```
 
-launchd-studio apply --start --config "$new_manifest"
+After editing the copied manifest, unload the old agent and apply the canonical one:
+
+```bash
+launchctl bootout "gui/$(id -u)/dev.launchd-studio.web-ui" 2>/dev/null || true
+rm -f "$HOME/Library/LaunchAgents/dev.launchd-studio.web-ui.plist"
+
+launchd-studio apply --start
 launchctl list | grep 'horse.hsb.launchd-studio'
 ```
 

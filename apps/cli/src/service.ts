@@ -125,7 +125,7 @@ function selfCommand(): ReadonlyArray<string> {
   return executable.endsWith("/bun") ? [executable, "run", Bun.main] : [executable];
 }
 
-function selfServiceJob(configPath: string, port: number): JobDefinition {
+function selfServiceJob(port: number): JobDefinition {
   return {
     kind: "service",
     label: SELF_SERVICE_LABEL,
@@ -134,8 +134,6 @@ function selfServiceJob(configPath: string, port: number): JobDefinition {
     command: [
       ...selfCommand(),
       "web-ui",
-      "--config",
-      configPath,
       "--port",
       String(port),
       "--no-open",
@@ -258,7 +256,7 @@ export class LocalStudioService implements StudioTransport {
       toolPaths: await findToolPaths(this.#homeDirectory),
       selfService: {
         id: SELF_SERVICE_ID,
-        job: selfServiceJob(this.#configPath, this.#webUiPort),
+        job: selfServiceJob(this.#webUiPort),
         url: `http://127.0.0.1:${this.#webUiPort}/`,
       },
     };

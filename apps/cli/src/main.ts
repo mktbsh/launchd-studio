@@ -27,7 +27,7 @@ import {
   readTextIfExists,
   writeTextAtomic,
 } from "./adapters/filesystem";
-import { defaultManifestPath, findManifestPath } from "./adapters/paths";
+import { defaultManifestPath } from "./adapters/paths";
 import { defaultTokenPath, readOrCreateToken } from "./adapters/state";
 import { DEFAULT_WEB_UI_PORT, LocalStudioService, StudioError } from "./service";
 import { startWebUiServer } from "./server/server";
@@ -51,7 +51,7 @@ Usage:
   launchd-studio <command> [arguments] [options]
 
 Commands:
-  init [path]                 Create a starter JSON manifest
+  init                        Create the user JSON manifest
   validate                    Validate syntax and job semantics
   format                      Format the manifest; use --write to save
   render [job]                Render generated launchd plist XML
@@ -71,7 +71,6 @@ Commands:
   help                        Show this help
 
 Common options:
-  -c, --config <path>         Manifest path; searched upward, then macOS Application Support
       --json                  Print machine-readable JSON
   -j, --job <id>              Select a job instead of using a positional ID
 
@@ -205,8 +204,7 @@ async function run(): Promise<number> {
     }
     return result.status === "unsupported" ? 1 : 0;
   }
-  const explicitConfig = stringOption(invocation.options, "config");
-  const configPath = await findManifestPath(explicitConfig);
+  const configPath = defaultManifestPath(homedir());
   const webUiPort = resolveWebUiPort(stringOption(invocation.options, "port"));
   const service = new LocalStudioService({
     configPath,
@@ -224,9 +222,13 @@ async function run(): Promise<number> {
       return 0;
     }
     case "init": {
-      const destination = resolve(
-        invocation.positionals[0] ?? explicitConfig ?? defaultManifestPath(homedir()),
-      );
+      if (invocation.positionals.length > 0) {
+        throw new StudioError(
+          "init does not accept a manifest path; it always uses the user manifest.",
+          { code: "cli.invalid-init-arguments" },
+        );
+      }
+      const destination = configPath;
       if ((await pathExists(destination)) && !booleanOption(invocation.options, "force")) {
         throw new StudioError(`Refusing to overwrite ${destination}; use --force.`, {
           status: 409,

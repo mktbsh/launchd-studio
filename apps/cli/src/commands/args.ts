@@ -5,7 +5,6 @@ export interface ParsedCliArgs {
 }
 
 const SHORT_OPTIONS: Readonly<Record<string, string>> = {
-  c: "config",
   j: "job",
   o: "output",
   h: "help",
@@ -29,7 +28,6 @@ const BOOLEAN_OPTIONS = new Set([
 ]);
 
 const VALUE_OPTIONS = new Set([
-  "config",
   "job",
   "output",
   "stream",

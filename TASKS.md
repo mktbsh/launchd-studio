@@ -20,3 +20,10 @@ updated: 2026-08-09
 - [x] T10 [blocks T11] Make `init` without an explicit path create the manifest and schema in macOS Application Support, while retaining project search and `--config`.
 - [x] T11 [depends T09, T10] Add focused tests for label derivation and manifest path resolution.
 - [x] T12 [depends T11] Update README and provide manual cleanup steps for the old `dev.launchd-studio.web-ui` agent and project-local manifest.
+
+# single canonical user manifest
+
+- [x] T13 [blocks T14] Make the macOS Application Support manifest the only CLI manifest source, independent of cwd.
+- [x] T14 [depends T13] Remove `--config` and the optional `init` path from the public CLI interface.
+- [x] T15 [depends T13] Generate the self-service LaunchAgent without a manifest argument.
+- [x] T16 [depends T14, T15] Update tests, README, CONTEXT, ADR, and migration instructions.

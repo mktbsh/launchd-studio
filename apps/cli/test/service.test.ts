@@ -137,6 +137,7 @@ describe("local studio service state reconciliation", () => {
       });
       const offer = (await service.getCapabilities()).selfService;
       expect(offer.job.label).toBe(SELF_SERVICE_LABEL);
+      expect(offer.job.command).not.toContain("--config");
       const source = stringifyManifest({
         version: 1,
         jobs: {
