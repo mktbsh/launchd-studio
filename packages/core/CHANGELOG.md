@@ -1,5 +1,11 @@
 # @launchd-studio/core
 
+## 0.1.2
+
+### Patch Changes
+
+- 2675319: Use one canonical macOS Application Support manifest and remove cwd-dependent configuration selection.
+
 ## 0.1.1
 
 ### Patch Changes
