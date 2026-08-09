@@ -37,13 +37,11 @@ jobs:
       - run: bun run check
       - run: bun run build:binary
       - run: ./dist/launchd-studio version
-      - name: Name binary
-        run: mv dist/launchd-studio "dist/launchd-studio-darwin-${{ matrix.architecture }}"
       - name: Sign binary
         env:
           APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          BINARY: dist/launchd-studio-darwin-${{ matrix.architecture }}
+          BINARY: dist/launchd-studio
         run: |
           set -euo pipefail
           test -n "$APPLE_CERTIFICATE_BASE64"
@@ -69,7 +67,7 @@ jobs:
       - name: Package binary for notarization
         env:
           ARCHIVE: dist/launchd-studio-darwin-${{ matrix.architecture }}.zip
-          BINARY: dist/launchd-studio-darwin-${{ matrix.architecture }}
+          BINARY: dist/launchd-studio
         run: ditto -c -k --sequesterRsrc --keepParent "$BINARY" "$ARCHIVE"
       - name: Notarize package
         env:
@@ -91,21 +89,28 @@ jobs:
             --key-id "$APPLE_NOTARY_KEY_ID" \
             --issuer "$APPLE_NOTARY_ISSUER_ID" \
             --wait
-      - name: Compress binary and create checksum
+      - name: Compress binary and create checksums
         env:
-          BINARY: dist/launchd-studio-darwin-${{ matrix.architecture }}
+          BINARY: dist/launchd-studio
           ARCHIVE: dist/launchd-studio-darwin-${{ matrix.architecture }}.gz
           CHECKSUM: dist/launchd-studio-darwin-${{ matrix.architecture }}.gz.sha256
+          HOMEBREW_ARCHIVE: dist/launchd-studio-darwin-${{ matrix.architecture }}.tar.gz
+          HOMEBREW_CHECKSUM: dist/launchd-studio-darwin-${{ matrix.architecture }}.tar.gz.sha256
         run: |
           set -euo pipefail
           gzip -c "$BINARY" > "$ARCHIVE"
+          tar -czf "$HOMEBREW_ARCHIVE" -C "$(dirname "$BINARY")" "$(basename "$BINARY")"
+          test "$(tar -tzf "$HOMEBREW_ARCHIVE")" = "launchd-studio"
           (cd "$(dirname "$ARCHIVE")" && shasum -a 256 "$(basename "$ARCHIVE")" > "$(basename "$CHECKSUM")")
+          (cd "$(dirname "$HOMEBREW_ARCHIVE")" && shasum -a 256 "$(basename "$HOMEBREW_ARCHIVE")" > "$(basename "$HOMEBREW_CHECKSUM")")
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: release-${{ matrix.architecture }}
           path: |
             dist/launchd-studio-darwin-${{ matrix.architecture }}.gz
             dist/launchd-studio-darwin-${{ matrix.architecture }}.gz.sha256
+            dist/launchd-studio-darwin-${{ matrix.architecture }}.tar.gz
+            dist/launchd-studio-darwin-${{ matrix.architecture }}.tar.gz.sha256
           if-no-files-found: error
           retention-days: 1
 
