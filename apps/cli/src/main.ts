@@ -29,6 +29,13 @@ import {
 import { defaultTokenPath, readOrCreateToken } from "./adapters/state";
 import { DEFAULT_WEB_UI_PORT, LocalStudioService, StudioError } from "./service";
 import { startWebUiServer } from "./server/server";
+import {
+  autoUpdateEnabled,
+  isCompiledMacExecutable,
+  spawnUpdatedProcess,
+  UpdateError,
+  updateSelf,
+} from "./update";
 import packageMetadata from "../package.json";
 
 const VERSION = packageMetadata.version;
@@ -56,6 +63,7 @@ Commands:
   restart <job>               Restart an applied job
   logs <job>                  Show configured stdout or stderr logs
   doctor [job]                Diagnose paths, permissions, drift, and runtime state
+  update                      Check for and install a signed release update
   web-ui                      Start the local Web UI and API
   version                     Print the version
   help                        Show this help
@@ -72,7 +80,8 @@ Command options:
   apply --dry-run --start
   remove --keep-plist
   logs --stream <stdout|stderr> --tail <lines> --follow
-  web-ui --host <host> --port <port> --no-open --allow-remote
+  update --check
+  web-ui --host <host> --port <port> --no-open --no-update --allow-remote
 
 Environment:
   LAUNCHD_STUDIO_PORT         Web UI port; --port wins, 0 picks a free one
@@ -141,6 +150,47 @@ async function followLogFile(path: string, tail: number): Promise<number> {
   return processHandle.exited;
 }
 
+function updateResultMessage(result: Awaited<ReturnType<typeof updateSelf>>): string {
+  switch (result.status) {
+    case "unsupported":
+      return result.reason ?? "Self-update is not supported on this platform.";
+    case "up-to-date":
+      return result.reason === undefined
+        ? `Already up to date (${result.currentVersion}).`
+        : `${result.reason} Current: ${result.currentVersion}; feed: ${result.latestVersion}.`;
+    case "available":
+      return `Update available: ${result.currentVersion} -> ${result.latestVersion}.`;
+    case "updated":
+      return `Updated launchd-studio to ${result.latestVersion}.`;
+  }
+}
+
+async function autoUpdateWebUi(
+  rawArguments: ReadonlyArray<string>,
+  service: LocalStudioService,
+): Promise<boolean> {
+  try {
+    const result = await updateSelf({ currentVersion: VERSION, install: true });
+    if (result.status !== "updated" || result.executablePath === undefined) {
+      return false;
+    }
+    console.error(`${updateResultMessage(result)} Restarting Web UI.`);
+    if (await service.restartSelfService()) {
+      return true;
+    }
+    spawnUpdatedProcess(rawArguments, result.executablePath);
+    return true;
+  } catch (error) {
+    const message = error instanceof UpdateError
+      ? error.message
+      : error instanceof Error
+        ? error.message
+        : String(error);
+    console.error(`Update check skipped: ${message}`);
+    return false;
+  }
+}
+
 async function run(): Promise<number> {
   const rawArguments = Bun.argv.slice(2);
   if (rawArguments.length === 0 || rawArguments[0] === "--help" || rawArguments[0] === "-h") {
@@ -162,6 +212,18 @@ async function run(): Promise<number> {
     return 0;
   }
   const json = booleanOption(invocation.options, "json");
+  if (invocation.command === "update") {
+    const result = await updateSelf({
+      currentVersion: VERSION,
+      install: !booleanOption(invocation.options, "check"),
+    });
+    if (json) {
+      printJson(result);
+    } else {
+      console.log(updateResultMessage(result));
+    }
+    return result.status === "unsupported" ? 1 : 0;
+  }
   const configPath = await findConfigPath(stringOption(invocation.options, "config"));
   const webUiPort = resolveWebUiPort(stringOption(invocation.options, "port"));
   const service = new LocalStudioService({
@@ -414,6 +476,14 @@ async function run(): Promise<number> {
       return result.valid ? 0 : 1;
     }
     case "web-ui": {
+      if (
+        booleanOption(invocation.options, "update", true) &&
+        autoUpdateEnabled() &&
+        isCompiledMacExecutable() &&
+        (await autoUpdateWebUi(rawArguments, service))
+      ) {
+        return 0;
+      }
       const host = stringOption(invocation.options, "host") ?? "127.0.0.1";
       const server = startWebUiServer({
         transport: service,
@@ -449,6 +519,8 @@ try {
     if (Array.isArray(error.details)) {
       printDiagnostics(error.details);
     }
+  } else if (error instanceof UpdateError) {
+    console.error(error.message);
   } else {
     console.error(error instanceof Error ? error.stack ?? error.message : String(error));
   }

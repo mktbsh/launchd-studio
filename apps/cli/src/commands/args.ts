@@ -24,6 +24,8 @@ const BOOLEAN_OPTIONS = new Set([
   "follow",
   "open",
   "allow-remote",
+  "check",
+  "update",
 ]);
 
 const VALUE_OPTIONS = new Set([

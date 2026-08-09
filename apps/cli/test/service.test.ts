@@ -37,6 +37,20 @@ function unloadedLaunchd(): LaunchdAdapter {
   } as unknown as LaunchdAdapter;
 }
 
+function selfServiceLaunchd(): LaunchdAdapter {
+  return {
+    supported: true,
+    status: async () => ({
+      supported: true,
+      loaded: true,
+      running: true,
+      pid: process.pid,
+    }),
+    kickstart: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
+    assertSupported: () => undefined,
+  } as unknown as LaunchdAdapter;
+}
+
 describe("local studio service state reconciliation", () => {
   test("reloads an untracked loaded definition and accepts the tracked definition", async () => {
     const home = await mkdtemp(join(tmpdir(), "launchd-studio-home-"));
@@ -103,5 +117,13 @@ describe("local studio service state reconciliation", () => {
     } finally {
       await rm(home, { recursive: true, force: true });
     }
+  });
+
+  test("restarts the Web UI only when the current process owns its service", async () => {
+    const service = new LocalStudioService({
+      configPath: "/Users/test/launchd-studio.json",
+      launchd: selfServiceLaunchd(),
+    });
+    expect(await service.restartSelfService()).toBe(true);
   });
 });

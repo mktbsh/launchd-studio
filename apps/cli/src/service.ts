@@ -91,6 +91,7 @@ export interface LocalStudioServiceOptions {
 }
 
 export const SELF_SERVICE_ID = "launchd-studio";
+export const SELF_SERVICE_LABEL = "dev.launchd-studio.web-ui";
 
 // Running from source means the executable is Bun itself, so the entrypoint has
 // to travel with the command.
@@ -102,7 +103,7 @@ function selfCommand(): ReadonlyArray<string> {
 function selfServiceJob(configPath: string, port: number): JobDefinition {
   return {
     kind: "service",
-    label: "dev.launchd-studio.web-ui",
+    label: SELF_SERVICE_LABEL,
     description: "Launchd Studio",
     comment: "Serves the Web UI on a fixed port so the bookmark keeps working.",
     command: [
@@ -216,6 +217,14 @@ export class LocalStudioService implements StudioTransport {
 
   get launchd(): LaunchdAdapter {
     return this.#launchd;
+  }
+
+  async restartSelfService(): Promise<boolean> {
+    const status = await this.#launchd.status(SELF_SERVICE_LABEL);
+    if (status.pid !== process.pid) {
+      return false;
+    }
+    return (await this.#launchd.kickstart(SELF_SERVICE_LABEL, true)).exitCode === 0;
   }
 
   async getCapabilities(): Promise<StudioCapabilities> {

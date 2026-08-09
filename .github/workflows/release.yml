@@ -118,9 +118,41 @@ jobs:
           pattern: release-*
           path: dist
           merge-multiple: true
+      - name: Create update manifest
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          version="${TAG#v}"
+          arm64_archive="dist/launchd-studio-darwin-arm64.gz"
+          x64_archive="dist/launchd-studio-darwin-x64.gz"
+          test -f "$arm64_archive"
+          test -f "$x64_archive"
+
+          arm64_sha256="$(sha256sum "$arm64_archive" | awk '{print $1}')"
+          x64_sha256="$(sha256sum "$x64_archive" | awk '{print $1}')"
+          arm64_size="$(stat -c '%s' "$arm64_archive")"
+          x64_size="$(stat -c '%s' "$x64_archive")"
+
+          jq -n \
+            --arg version "$version" \
+            --arg tag "$TAG" \
+            --arg arm64_sha256 "$arm64_sha256" \
+            --arg x64_sha256 "$x64_sha256" \
+            --argjson arm64_size "$arm64_size" \
+            --argjson x64_size "$x64_size" \
+            '{
+              schemaVersion: 1,
+              version: $version,
+              tag: $tag,
+              platforms: {
+                "darwin-arm64": { sha256: $arm64_sha256, size: $arm64_size },
+                "darwin-x64": { sha256: $x64_sha256, size: $x64_size }
+              }
+            }' > dist/latest.json
       - name: Create GitHub Release
         env:
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag || github.ref_name }}
-        run: gh release create "$TAG" dist/*.gz dist/*.gz.sha256 --verify-tag --generate-notes --title "$TAG"
+        run: gh release create "$TAG" dist/*.gz dist/*.gz.sha256 dist/latest.json --verify-tag --generate-notes --title "$TAG"

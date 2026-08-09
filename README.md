@@ -19,6 +19,7 @@ Instead of editing plist keys directly, define either a long-running `service` o
 - managed-definition tracking for conservative runtime drift detection
 - status, start, stop, restart, logs, and doctor commands
 - authenticated localhost Web UI served by the CLI, installable as a login service from its own Overview
+- signed self-update checks for the compiled macOS binary
 - mise and Homebrew detection for a job's `PATH`
 - Vite output embeddable in a standalone Bun executable
 
@@ -174,6 +175,7 @@ stop <job>                  Unload a job, including KeepAlive jobs
 restart <job>               Force restart an applied job
 logs <job>                  Read stdout or stderr logs
 doctor [job]                Diagnose common configuration failures
+update [--check]            Check for or install a signed release update
 web-ui                      Start the local Web UI
 version                     Print the version
 ```
@@ -187,6 +189,8 @@ After a successful registration, Launchd Studio stores only ownership metadata a
 ```
 
 The JSON manifest remains the source of truth. The state file lets `plan` conservatively reload a loaded definition that was not registered by the current manifest, and lets `remove <job>` clean up a previously applied job even after that job was deleted from the manifest.
+
+`update` checks the latest GitHub Release for the current macOS architecture. It verifies the gzip size and SHA-256, the downloaded executable's code signature and Team ID, then replaces the current binary atomically. `update --check` only reports availability. A compiled binary started with `web-ui` performs the same check once before serving; use `web-ui --no-update` to skip it. Source execution and unsupported platforms do not self-update.
 
 ## Web UI
 

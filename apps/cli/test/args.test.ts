@@ -24,6 +24,9 @@ describe("CLI arguments", () => {
   test("supports negative boolean options", () => {
     const parsed = parseCliArgs(["web-ui", "--no-open"]);
     expect(booleanOption(parsed.options, "open", true)).toBe(false);
+
+    const withoutUpdate = parseCliArgs(["web-ui", "--no-update"]);
+    expect(booleanOption(withoutUpdate.options, "update", true)).toBe(false);
   });
 
   test("requires integers to be entirely numeric", () => {
