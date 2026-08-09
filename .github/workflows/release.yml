@@ -206,4 +206,15 @@ jobs:
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag || github.ref_name }}
-        run: gh release create "$TAG" dist/*.gz dist/*.gz.sha256 dist/*.tar.gz dist/*.tar.gz.sha256 dist/latest.json --verify-tag --generate-notes --title "$TAG"
+        run: >-
+          gh release create "$TAG"
+          dist/launchd-studio-darwin-arm64.gz
+          dist/launchd-studio-darwin-arm64.gz.sha256
+          dist/launchd-studio-darwin-arm64.tar.gz
+          dist/launchd-studio-darwin-arm64.tar.gz.sha256
+          dist/launchd-studio-darwin-x64.gz
+          dist/launchd-studio-darwin-x64.gz.sha256
+          dist/launchd-studio-darwin-x64.tar.gz
+          dist/launchd-studio-darwin-x64.tar.gz.sha256
+          dist/latest.json
+          --verify-tag --generate-notes --title "$TAG"
