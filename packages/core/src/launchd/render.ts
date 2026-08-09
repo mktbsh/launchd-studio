@@ -42,11 +42,22 @@ function calendarDictionary(entry: CalendarEntryDefinition): PlistDictionary {
   return plistDictionary(dictionary);
 }
 
-function launchdDictionary(job: NormalizedJob): PlistDictionary {
+export interface LaunchdRenderOptions {
+  readonly associatedBundleIdentifiers?: ReadonlyArray<string>;
+}
+
+function launchdDictionary(
+  job: NormalizedJob,
+  options: LaunchdRenderOptions,
+): PlistDictionary {
   const dictionary: Array<readonly [string, PlistValue]> = [
     ["Label", job.label],
     ["ProgramArguments", job.command],
   ];
+
+  if (options.associatedBundleIdentifiers !== undefined) {
+    dictionary.push(["AssociatedBundleIdentifiers", options.associatedBundleIdentifiers]);
+  }
 
   if (job.workingDirectory !== undefined) {
     dictionary.push(["WorkingDirectory", job.workingDirectory]);
@@ -88,23 +99,29 @@ function launchdDictionary(job: NormalizedJob): PlistDictionary {
   return plistDictionary(dictionary);
 }
 
-export function renderLaunchdJob(job: NormalizedJob): RenderedJob {
+export function renderLaunchdJob(
+  job: NormalizedJob,
+  options: LaunchdRenderOptions = {},
+): RenderedJob {
   return {
     id: job.id,
     label: job.label,
     kind: job.kind,
     plistPath: job.plistPath,
-    plist: renderPlist(launchdDictionary(job)),
+    plist: renderPlist(launchdDictionary(job, options)),
   };
 }
 
 export function renderLaunchdManifest(
   manifest: NormalizedManifest,
 ): ReadonlyArray<RenderedJob> {
-  return manifest.jobs.map(renderLaunchdJob);
+  return manifest.jobs.map((job) => renderLaunchdJob(job));
 }
 
-export function explainLaunchdJob(job: NormalizedJob): JobExplanation {
+export function explainLaunchdJob(
+  job: NormalizedJob,
+  options: LaunchdRenderOptions = {},
+): JobExplanation {
   const entries: JobExplanation["entries"] = [
     {
       source: "job label",
@@ -121,6 +138,14 @@ export function explainLaunchdJob(job: NormalizedJob): JobExplanation {
   ];
 
   const mutableEntries = [...entries];
+  if (options.associatedBundleIdentifiers !== undefined) {
+    mutableEntries.push({
+      source: "background attribution app",
+      target: "AssociatedBundleIdentifiers",
+      value: JSON.stringify(options.associatedBundleIdentifiers),
+      note: "Associates this legacy LaunchAgent with the signed app shown in Login Items.",
+    });
+  }
   if (job.workingDirectory !== undefined) {
     mutableEntries.push({
       source: "workingDirectory",

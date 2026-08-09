@@ -164,6 +164,22 @@ describe("plist rendering", () => {
     expect(plist.indexOf("<key>A</key>")).toBeLessThan(plist.indexOf("<key>B</key>"));
   });
 
+  test("renders background attribution only when requested", () => {
+    const result = compileManifest(SAMPLE_SOURCE, context);
+    if (!result.valid || result.manifest.jobs[0] === undefined) {
+      throw new Error("sample manifest did not compile");
+    }
+
+    const ordinary = renderLaunchdJob(result.manifest.jobs[0]).plist;
+    const attributed = renderLaunchdJob(result.manifest.jobs[0], {
+      associatedBundleIdentifiers: ["dev.launchd-studio.app"],
+    }).plist;
+    expect(ordinary).not.toContain("AssociatedBundleIdentifiers");
+    expect(attributed).toContain(
+      "<key>AssociatedBundleIdentifiers</key>\n    <array>\n      <string>dev.launchd-studio.app</string>",
+    );
+  });
+
   test("renders one calendar entry as a dictionary and several as an array", () => {
     const one = compileManifest(`{
       "version": 1,

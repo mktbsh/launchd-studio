@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { compileManifest, renderLaunchdJob } from "@launchd-studio/core";
+import { compileManifest, renderLaunchdJob, stringifyManifest } from "@launchd-studio/core";
 import { writeTextAtomic } from "../src/adapters/filesystem";
 import type { LaunchdAdapter } from "../src/adapters/launchd";
 import { hashPlist, ManagedStateStore } from "../src/adapters/state";
@@ -125,5 +125,40 @@ describe("local studio service state reconciliation", () => {
       launchd: selfServiceLaunchd(),
     });
     expect(await service.restartSelfService()).toBe(true);
+  });
+
+  test("associates only the self-service job with the attribution app", async () => {
+    const home = await mkdtemp(join(tmpdir(), "launchd-studio-home-"));
+    try {
+      const service = new LocalStudioService({
+        configPath: join(home, "launchd-studio.json"),
+        homeDirectory: home,
+        launchd: unloadedLaunchd(),
+      });
+      const offer = (await service.getCapabilities()).selfService;
+      const source = stringifyManifest({
+        version: 1,
+        jobs: {
+          [offer.id]: offer.job,
+          api: {
+            kind: "service",
+            command: ["/usr/bin/true"],
+            start: "login",
+            restart: "on-failure",
+          },
+        },
+      });
+      const rendered = await service.renderManifest(source);
+
+      expect(rendered.valid).toBe(true);
+      expect(rendered.jobs.find((job) => job.id === offer.id)?.plist).toContain(
+        "AssociatedBundleIdentifiers",
+      );
+      expect(rendered.jobs.find((job) => job.id === "api")?.plist).not.toContain(
+        "AssociatedBundleIdentifiers",
+      );
+    } finally {
+      await rm(home, { recursive: true, force: true });
+    }
   });
 });

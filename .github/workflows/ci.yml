@@ -19,4 +19,6 @@ jobs:
       - run: bun install
       - run: bun run check
       - run: bun run build:binary
+      - run: bun run package:app
       - run: ./dist/launchd-studio version
+      - run: plutil -lint 'dist/Launchd Studio.app/Contents/Info.plist'

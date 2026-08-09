@@ -45,6 +45,8 @@ jobs:
           APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           BINARY: dist/launchd-studio
+          APP_BUNDLE: dist/Launchd Studio.app
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           set -euo pipefail
           test -n "$APPLE_CERTIFICATE_BASE64"
@@ -66,13 +68,21 @@ jobs:
           signing_identity="$(security find-identity -v -p codesigning "$keychain_path" | awk -F'"' '/Developer ID Application:/ { print $2; exit }')"
           test -n "$signing_identity"
           codesign --force --options runtime --timestamp --sign "$signing_identity" "$BINARY"
+          bun run package:app
+          test "$("$APP_BUNDLE/Contents/MacOS/launchd-studio" version)" = "${RELEASE_TAG#v}"
+          codesign --force --options runtime --timestamp --sign "$signing_identity" "$APP_BUNDLE"
           codesign --verify --strict --verbose=2 "$BINARY"
-      - name: Package binary for notarization
+          codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"
+      - name: Package artifacts for notarization
         env:
-          ARCHIVE: dist/launchd-studio-darwin-${{ matrix.architecture }}.zip
+          BINARY_ARCHIVE: dist/launchd-studio-darwin-${{ matrix.architecture }}.zip
+          APP_ARCHIVE: dist/launchd-studio-darwin-${{ matrix.architecture }}-app.zip
           BINARY: dist/launchd-studio
-        run: ditto -c -k --sequesterRsrc --keepParent "$BINARY" "$ARCHIVE"
-      - name: Notarize package
+          APP_BUNDLE: dist/Launchd Studio.app
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent "$BINARY" "$BINARY_ARCHIVE"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_BUNDLE" "$APP_ARCHIVE"
+      - name: Notarize binary package
         env:
           APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
           APPLE_NOTARY_KEY_BASE64: ${{ secrets.APPLE_NOTARY_KEY_BASE64 }}
@@ -92,9 +102,36 @@ jobs:
             --key-id "$APPLE_NOTARY_KEY_ID" \
             --issuer "$APPLE_NOTARY_ISSUER_ID" \
             --wait
+      - name: Notarize app package
+        env:
+          APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
+          APPLE_NOTARY_KEY_BASE64: ${{ secrets.APPLE_NOTARY_KEY_BASE64 }}
+          APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
+          ARCHIVE: dist/launchd-studio-darwin-${{ matrix.architecture }}-app.zip
+        run: |
+          set -euo pipefail
+          test -n "$APPLE_NOTARY_ISSUER_ID"
+          test -n "$APPLE_NOTARY_KEY_BASE64"
+          test -n "$APPLE_NOTARY_KEY_ID"
+
+          key_path="$RUNNER_TEMP/AuthKey_${APPLE_NOTARY_KEY_ID}.p8"
+          printf '%s' "$APPLE_NOTARY_KEY_BASE64" | base64 -D > "$key_path"
+          trap 'rm -f "$key_path"' EXIT
+          xcrun notarytool submit "$ARCHIVE" \
+            --key "$key_path" \
+            --key-id "$APPLE_NOTARY_KEY_ID" \
+            --issuer "$APPLE_NOTARY_ISSUER_ID" \
+            --wait
+      - name: Staple app notarization
+        env:
+          APP_BUNDLE: dist/Launchd Studio.app
+        run: |
+          xcrun stapler staple "$APP_BUNDLE"
+          xcrun stapler validate "$APP_BUNDLE"
       - name: Compress binary and create checksums
         env:
           BINARY: dist/launchd-studio
+          APP_BUNDLE: dist/Launchd Studio.app
           ARCHIVE: dist/launchd-studio-darwin-${{ matrix.architecture }}.gz
           CHECKSUM: dist/launchd-studio-darwin-${{ matrix.architecture }}.gz.sha256
           HOMEBREW_ARCHIVE: dist/launchd-studio-darwin-${{ matrix.architecture }}.tar.gz
@@ -102,8 +139,14 @@ jobs:
         run: |
           set -euo pipefail
           gzip -c "$BINARY" > "$ARCHIVE"
-          tar -czf "$HOMEBREW_ARCHIVE" -C "$(dirname "$BINARY")" "$(basename "$BINARY")"
-          test "$(tar -tzf "$HOMEBREW_ARCHIVE")" = "launchd-studio"
+          package_directory="$RUNNER_TEMP/launchd-studio-package"
+          trap 'rm -rf "$package_directory"' EXIT
+          mkdir -p "$package_directory"
+          cp "$BINARY" "$package_directory/launchd-studio"
+          ditto "$APP_BUNDLE" "$package_directory/Launchd Studio.app"
+          tar -czf "$HOMEBREW_ARCHIVE" -C "$package_directory" "launchd-studio" "Launchd Studio.app"
+          tar -tzf "$HOMEBREW_ARCHIVE" | grep -Fxq "launchd-studio"
+          tar -tzf "$HOMEBREW_ARCHIVE" | grep -Fxq "Launchd Studio.app/Contents/Info.plist"
           (cd "$(dirname "$ARCHIVE")" && shasum -a 256 "$(basename "$ARCHIVE")" > "$(basename "$CHECKSUM")")
           (cd "$(dirname "$HOMEBREW_ARCHIVE")" && shasum -a 256 "$(basename "$HOMEBREW_ARCHIVE")" > "$(basename "$HOMEBREW_CHECKSUM")")
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -163,4 +206,4 @@ jobs:
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag || github.ref_name }}
-        run: gh release create "$TAG" dist/*.gz dist/*.gz.sha256 dist/latest.json --verify-tag --generate-notes --title "$TAG"
+        run: gh release create "$TAG" dist/*.gz dist/*.gz.sha256 dist/*.tar.gz dist/*.tar.gz.sha256 dist/latest.json --verify-tag --generate-notes --title "$TAG"

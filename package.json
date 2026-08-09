@@ -13,6 +13,7 @@
     "dev:cli": "bun run --filter @launchd-studio/cli dev",
     "build:web": "bun run --filter @launchd-studio/web build",
     "build:binary": "bun run scripts/build-binary.ts",
+    "package:app": "bun run scripts/package-app.ts",
     "build": "bun run build:binary",
     "changeset": "changeset",
     "typecheck": "bun run --filter '*' typecheck",

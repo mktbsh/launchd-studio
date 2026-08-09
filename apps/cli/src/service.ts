@@ -7,9 +7,11 @@ import {
   explainLaunchdJob,
   formatManifestJson,
   renderLaunchdJob,
+  type LaunchdRenderOptions,
   type Diagnostic,
   type JobDefinition,
   type JobDoctorReport,
+  type JobExplanation,
   type ManifestCompilation,
   type NormalizedJob,
   type NormalizedManifest,
@@ -92,6 +94,29 @@ export interface LocalStudioServiceOptions {
 
 export const SELF_SERVICE_ID = "launchd-studio";
 export const SELF_SERVICE_LABEL = "dev.launchd-studio.web-ui";
+export const SELF_SERVICE_BUNDLE_ID = "dev.launchd-studio.app";
+
+const SELF_SERVICE_RENDER_OPTIONS: LaunchdRenderOptions = {
+  associatedBundleIdentifiers: [SELF_SERVICE_BUNDLE_ID],
+};
+
+function isSelfServiceJob(job: NormalizedJob): boolean {
+  return job.id === SELF_SERVICE_ID && job.label === SELF_SERVICE_LABEL;
+}
+
+function renderJob(job: NormalizedJob): RenderedJob {
+  return renderLaunchdJob(
+    job,
+    isSelfServiceJob(job) ? SELF_SERVICE_RENDER_OPTIONS : undefined,
+  );
+}
+
+function explainJob(job: NormalizedJob): JobExplanation {
+  return explainLaunchdJob(
+    job,
+    isSelfServiceJob(job) ? SELF_SERVICE_RENDER_OPTIONS : undefined,
+  );
+}
 
 // Running from source means the executable is Bun itself, so the entrypoint has
 // to travel with the command.
@@ -302,7 +327,7 @@ export class LocalStudioService implements StudioTransport {
     return {
       valid: selected.diagnostics.length === 0,
       diagnostics: [...compilation.diagnostics, ...selected.diagnostics],
-      jobs: selected.jobs.map(renderLaunchdJob),
+      jobs: selected.jobs.map(renderJob),
     };
   }
 
@@ -315,7 +340,7 @@ export class LocalStudioService implements StudioTransport {
     return {
       valid: selected.diagnostics.length === 0,
       diagnostics: [...compilation.diagnostics, ...selected.diagnostics],
-      jobs: selected.jobs.map(explainLaunchdJob),
+      jobs: selected.jobs.map(explainJob),
     };
   }
 
@@ -1020,7 +1045,7 @@ export class LocalStudioService implements StudioTransport {
     return {
       valid: true,
       diagnostics: compilation.diagnostics,
-      jobs: selected.jobs.map((job) => ({ job, rendered: renderLaunchdJob(job) })),
+      jobs: selected.jobs.map((job) => ({ job, rendered: renderJob(job) })),
     };
   }
 

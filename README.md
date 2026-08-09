@@ -37,7 +37,9 @@ curl -fsSL https://raw.githubusercontent.com/mktbsh/launchd-studio/main/install.
 
 The installer puts the binary in `~/.local/bin`. Set `INSTALL_DIR` to use another directory.
 
-Each GitHub Release also includes a gzip-compressed binary and its SHA-256 checksum.
+It also installs the signed `Launchd Studio.app` attribution bundle in `~/Applications` so the self-service LaunchAgent appears as Launchd Studio in macOS background activity settings.
+
+Each GitHub Release also includes a gzip-compressed self-update binary and a tarball containing the CLI plus attribution app, each with a SHA-256 checksum.
 
 ## Install with Homebrew
 
@@ -48,7 +50,7 @@ brew tap mktbsh/tap
 brew install --cask launchd-studio
 ```
 
-Homebrew-managed installations update with `brew upgrade --cask launchd-studio`.
+The Cask installs both the CLI and `Launchd Studio.app`; Homebrew-managed installations update with `brew upgrade --cask launchd-studio`.
 
 ## Install and verify
 
@@ -71,6 +73,8 @@ bun run build
 ```
 
 The executable contains the Vite production output. No separate Web asset directory is required at runtime.
+
+`bun run package:app` stages the attribution app around the compiled binary for release packaging.
 
 ## Quick start
 
@@ -211,7 +215,7 @@ The Vite application runs only against the localhost API served by `web-ui`; it 
 
 ### Run it at login
 
-The Overview offers **Run Launchd Studio at login**, which stages a `launchd-studio` service running `web-ui` on the fixed port against the current manifest. Nothing is written until you install the staged change. The bookmark is `http://127.0.0.1:43210/`; the token is added on first visit from the CLI-opened URL.
+The Overview offers **Run Launchd Studio at login**, which stages a `launchd-studio` service running `web-ui` on the fixed port against the current manifest. Nothing is written until you install the staged change. The signed attribution app associates this reserved LaunchAgent with the Launchd Studio name in macOS background activity settings. The bookmark is `http://127.0.0.1:43210/`; the token is added on first visit from the CLI-opened URL.
 
 ### Toolchain paths
 
