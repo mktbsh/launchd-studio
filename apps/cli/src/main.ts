@@ -29,8 +29,9 @@ import {
 import { defaultTokenPath, readOrCreateToken } from "./adapters/state";
 import { DEFAULT_WEB_UI_PORT, LocalStudioService, StudioError } from "./service";
 import { startWebUiServer } from "./server/server";
+import packageMetadata from "../package.json";
 
-const VERSION = "0.1.0";
+const VERSION = packageMetadata.version;
 const SCHEMA_FILENAME = "launchd-studio.schema.json";
 
 const HELP = `launchd-studio ${VERSION}
