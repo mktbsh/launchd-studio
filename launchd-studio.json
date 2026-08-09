@@ -1,5 +1,0 @@
-{
-  "$schema": "./launchd-studio.schema.json",
-  "version": 1,
-  "jobs": {}
-}
