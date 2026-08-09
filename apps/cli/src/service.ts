@@ -93,7 +93,7 @@ export interface LocalStudioServiceOptions {
 }
 
 export const SELF_SERVICE_ID = "launchd-studio";
-export const SELF_SERVICE_LABEL = "dev.launchd-studio.web-ui";
+export const SELF_SERVICE_LABEL = "horse.hsb.launchd-studio.web-ui";
 export const SELF_SERVICE_BUNDLE_ID = "dev.launchd-studio.app";
 
 const SELF_SERVICE_RENDER_OPTIONS: LaunchdRenderOptions = {

@@ -81,10 +81,10 @@ The executable contains the Vite production output. No separate Web asset direct
 Create a manifest:
 
 ```bash
-bun run apps/cli/src/main.ts init
+launchd-studio init
 ```
 
-`init` writes both `launchd-studio.json` and `launchd-studio.schema.json` so editor completion works without relying on a hosted schema URL. The generated manifest has no jobs; `examples/services.json` shows the shape of a populated one.
+`init` writes both `~/Library/Application Support/launchd-studio/launchd-studio.json` and its `launchd-studio.schema.json` sidecar so editor completion works without relying on a hosted schema URL. The generated manifest has no jobs; `examples/services.json` shows the shape of a populated one.
 
 Validate, inspect, and apply it:
 
@@ -103,7 +103,7 @@ bun run build:web
 bun run apps/cli/src/main.ts web-ui
 ```
 
-The CLI searches the current directory and parents for `launchd-studio.json` or `.launchd-studio.json`. Override it with `--config`.
+The CLI searches the current directory and parents for `launchd-studio.json` or `.launchd-studio.json`, then falls back to macOS Application Support. Override it with `--config`.
 
 ## Manifest
 
@@ -171,7 +171,7 @@ Generated logs default to:
 ~/Library/Logs/launchd-studio/<job-id>.stderr.log
 ```
 
-A missing label is derived as `dev.launchd-studio.<job-id>` unless the job ID already contains a dot.
+A missing label is derived as `horse.hsb.launchd-studio.<job-id>` unless the job ID already contains a dot.
 
 ## CLI
 
@@ -216,6 +216,30 @@ The Vite application runs only against the localhost API served by `web-ui`; it 
 ### Run it at login
 
 The Overview offers **Run Launchd Studio at login**, which stages a `launchd-studio` service running `web-ui` on the fixed port against the current manifest. Nothing is written until you install the staged change. The signed attribution app associates this reserved LaunchAgent with the Launchd Studio name in macOS background activity settings. The bookmark is `http://127.0.0.1:43210/`; the token is added on first visit from the CLI-opened URL.
+
+### Reset an older self-service setup
+
+If an older setup still uses `dev.launchd-studio.web-ui`, stop it before applying the new self-service definition:
+
+```bash
+old_manifest="$PWD/launchd-studio.json"
+new_manifest="$HOME/Library/Application Support/launchd-studio/launchd-studio.json"
+
+launchd-studio remove launchd-studio --config "$old_manifest" || true
+launchctl bootout "gui/$(id -u)/dev.launchd-studio.web-ui" 2>/dev/null || true
+rm -f "$HOME/Library/LaunchAgents/dev.launchd-studio.web-ui.plist"
+
+mkdir -p "$(dirname "$new_manifest")"
+cp "$old_manifest" "$new_manifest"
+if [ -f "$PWD/launchd-studio.schema.json" ]; then
+  cp "$PWD/launchd-studio.schema.json" "$(dirname "$new_manifest")/launchd-studio.schema.json"
+fi
+
+launchd-studio apply --start --config "$new_manifest"
+launchctl list | grep 'horse.hsb.launchd-studio'
+```
+
+After verifying the new agent, remove the old project-local manifest and schema if they are no longer needed.
 
 ### Toolchain paths
 

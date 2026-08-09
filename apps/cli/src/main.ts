@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 
+import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { DEFAULT_MANIFEST_SOURCE } from "@launchd-studio/core";
 import manifestSchema from "../../../schemas/manifest.schema.json";
@@ -26,6 +27,7 @@ import {
   readTextIfExists,
   writeTextAtomic,
 } from "./adapters/filesystem";
+import { defaultManifestPath, findManifestPath } from "./adapters/paths";
 import { defaultTokenPath, readOrCreateToken } from "./adapters/state";
 import { DEFAULT_WEB_UI_PORT, LocalStudioService, StudioError } from "./service";
 import { startWebUiServer } from "./server/server";
@@ -69,7 +71,7 @@ Commands:
   help                        Show this help
 
 Common options:
-  -c, --config <path>         Manifest path; searched upward when omitted
+  -c, --config <path>         Manifest path; searched upward, then macOS Application Support
       --json                  Print machine-readable JSON
   -j, --job <id>              Select a job instead of using a positional ID
 
@@ -100,27 +102,6 @@ function resolveWebUiPort(option: string | undefined): number {
     );
   }
   return port;
-}
-
-async function findConfigPath(explicitPath?: string): Promise<string> {
-  if (explicitPath !== undefined) {
-    return resolve(explicitPath);
-  }
-
-  let directory = process.cwd();
-  while (true) {
-    for (const filename of ["launchd-studio.json", ".launchd-studio.json"]) {
-      const candidate = join(directory, filename);
-      if (await pathExists(candidate)) {
-        return candidate;
-      }
-    }
-    const parent = dirname(directory);
-    if (parent === directory) {
-      return resolve(process.cwd(), "launchd-studio.json");
-    }
-    directory = parent;
-  }
 }
 
 async function requireSource(service: LocalStudioService): Promise<string> {
@@ -224,7 +205,8 @@ async function run(): Promise<number> {
     }
     return result.status === "unsupported" ? 1 : 0;
   }
-  const configPath = await findConfigPath(stringOption(invocation.options, "config"));
+  const explicitConfig = stringOption(invocation.options, "config");
+  const configPath = await findManifestPath(explicitConfig);
   const webUiPort = resolveWebUiPort(stringOption(invocation.options, "port"));
   const service = new LocalStudioService({
     configPath,
@@ -242,7 +224,9 @@ async function run(): Promise<number> {
       return 0;
     }
     case "init": {
-      const destination = resolve(invocation.positionals[0] ?? configPath);
+      const destination = resolve(
+        invocation.positionals[0] ?? explicitConfig ?? defaultManifestPath(homedir()),
+      );
       if ((await pathExists(destination)) && !booleanOption(invocation.options, "force")) {
         throw new StudioError(`Refusing to overwrite ${destination}; use --force.`, {
           status: 409,

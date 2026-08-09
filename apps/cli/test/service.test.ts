@@ -6,7 +6,7 @@ import { compileManifest, renderLaunchdJob, stringifyManifest } from "@launchd-s
 import { writeTextAtomic } from "../src/adapters/filesystem";
 import type { LaunchdAdapter } from "../src/adapters/launchd";
 import { hashPlist, ManagedStateStore } from "../src/adapters/state";
-import { LocalStudioService } from "../src/service";
+import { LocalStudioService, SELF_SERVICE_LABEL } from "../src/service";
 
 const SOURCE = `{
   "version": 1,
@@ -136,6 +136,7 @@ describe("local studio service state reconciliation", () => {
         launchd: unloadedLaunchd(),
       });
       const offer = (await service.getCapabilities()).selfService;
+      expect(offer.job.label).toBe(SELF_SERVICE_LABEL);
       const source = stringifyManifest({
         version: 1,
         jobs: {

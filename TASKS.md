@@ -13,3 +13,10 @@ updated: 2026-08-09
 - [x] T06 [blocks T07] Add a Changeset that promotes the fixed package group to `0.1.0`.
 - [x] T07 [depends T01, T02, T03, T04, T05, T06] Run focused tests, full checks, artifact inspection, and release-readiness checks.
 - [x] T08 [depends T07] After the `v0.1.0` Release and cask update are live, delete old GitHub Release objects/assets and retain Git tags.
+
+# label namespace and macOS manifest location
+
+- [x] T09 [blocks T11] Change generated labels and the reserved self-service label to the `horse.hsb.launchd-studio` namespace without changing the attribution app bundle ID.
+- [x] T10 [blocks T11] Make `init` without an explicit path create the manifest and schema in macOS Application Support, while retaining project search and `--config`.
+- [x] T11 [depends T09, T10] Add focused tests for label derivation and manifest path resolution.
+- [x] T12 [depends T11] Update README and provide manual cleanup steps for the old `dev.launchd-studio.web-ui` agent and project-local manifest.

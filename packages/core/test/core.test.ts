@@ -3,6 +3,7 @@ import {
   compileManifest,
   createManifestPlan,
   DEFAULT_MANIFEST_SOURCE,
+  deriveLabel,
   formatManifestJson,
   parseDurationSeconds,
   parseManifestJson,
@@ -60,6 +61,11 @@ describe("manifest JSON", () => {
 });
 
 describe("manifest compiler", () => {
+  test("derives labels in the horse.hsb namespace", () => {
+    expect(deriveLabel("web-ui")).toBe("horse.hsb.launchd-studio.web-ui");
+    expect(deriveLabel("custom.namespace")).toBe("custom.namespace");
+  });
+
   test("compiles the starter manifest with no jobs", () => {
     const result = compileManifest(DEFAULT_MANIFEST_SOURCE, context);
     expect(result.valid).toBe(true);
