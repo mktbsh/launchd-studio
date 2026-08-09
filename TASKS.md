@@ -12,4 +12,4 @@ updated: 2026-08-09
 - [x] T05 [depends T03] Update the Homebrew cask to install the app and expose the standalone CLI binary after the v0.1.0 asset checksum exists.
 - [x] T06 [blocks T07] Add a Changeset that promotes the fixed package group to `0.1.0`.
 - [x] T07 [depends T01, T02, T03, T04, T05, T06] Run focused tests, full checks, artifact inspection, and release-readiness checks.
-- [ ] T08 [depends T07] After the `v0.1.0` Release and cask update are live, delete old GitHub Release objects/assets and retain Git tags.
+- [x] T08 [depends T07] After the `v0.1.0` Release and cask update are live, delete old GitHub Release objects/assets and retain Git tags.
