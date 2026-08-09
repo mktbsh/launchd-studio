@@ -1,5 +1,11 @@
 # @launchd-studio/web-ui
 
+## 0.0.8
+
+### Patch Changes
+
+- Package Homebrew archives with a neutral `launchd-studio` binary name.
+
 ## 0.0.6
 
 ### Patch Changes
