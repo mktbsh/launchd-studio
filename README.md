@@ -18,7 +18,7 @@ Instead of editing plist keys directly, define either a long-running `service` o
 - plan/apply without implicit prune
 - managed-definition tracking for conservative runtime drift detection
 - status, start, stop, restart, logs, and doctor commands
-- authenticated localhost Web UI served by the CLI, installable as a login service from its own Overview
+- loopback-only Web UI served by the CLI, installable as a login service from its own Overview
 - signed self-update checks for the compiled macOS binary
 - mise and Homebrew detection for a job's `PATH`
 - Vite output embeddable in a standalone Bun executable
@@ -211,13 +211,13 @@ The JSON manifest remains the source of truth. The state file lets `plan` conser
 
 ## Web UI
 
-The Vite application runs only against the localhost API served by `web-ui`; it has no standalone browser mode. Without the bearer token it renders a single message pointing back at the CLI. `bun run dev:web` therefore needs a running `web-ui` and the token in the URL fragment.
+The Vite application runs only against the loopback API served by `web-ui`; it has no standalone browser mode. `bun run dev:web` therefore needs a running `web-ui` on the configured port.
 
-`web-ui` binds to `127.0.0.1:43210`. Override the port with `--port` or `LAUNCHD_STUDIO_PORT`; `--port 0` picks a free one. The bearer token is generated once and kept at `~/Library/Application Support/launchd-studio/web-ui-token` with mode `0600`, so the URL survives a restart. The CLI opens a URL carrying that token in the fragment, the page stores it in same-tab `sessionStorage`, removes the fragment from browser history, and every API request is origin-checked. Remote binding requires `--allow-remote` and is not recommended.
+`web-ui` binds only to `127.0.0.1:43210`. Override the port with `--port` or `LAUNCHD_STUDIO_PORT`; `--port 0` picks a free one. The server rejects any other Host and any browser Origin that does not match the request URL. Remote binding is not supported, and the CLI opens the plain local URL without authentication. A `web-ui-token` file left by version 0.1.2 or earlier is unused and can be removed.
 
 ### Run it at login
 
-The Overview offers **Run Launchd Studio at login**, which stages a `launchd-studio` service running `web-ui` on the fixed port against the user manifest. The generated LaunchAgent starts `web-ui` without a manifest argument, so it uses the same canonical file regardless of its working directory. Nothing is written until you install the staged change. The signed attribution app associates this reserved LaunchAgent with the Launchd Studio name in macOS background activity settings. The bookmark is `http://127.0.0.1:43210/`; the token is added on first visit from the CLI-opened URL.
+The Overview offers **Run Launchd Studio at login**, which stages a `launchd-studio` service running `web-ui` on the fixed port against the user manifest. The generated LaunchAgent starts `web-ui` without a manifest argument, so it uses the same canonical file regardless of its working directory. Nothing is written until you install the staged change. The signed attribution app associates this reserved LaunchAgent with the Launchd Studio name in macOS background activity settings. The bookmark `http://127.0.0.1:43210/` works directly across browser sessions.
 
 ### Reset an older self-service setup
 
@@ -281,6 +281,7 @@ Executables in `command` still have to be absolute: launchd resolves nothing thr
 - Existing plist files are backed up before update.
 - Omitted jobs are never pruned.
 - Loaded definitions without matching managed-state metadata are treated as drift and reloaded on apply.
+- The Web UI is unauthenticated and loopback-only. Another local account or process on the same Mac can reach it.
 - LaunchAgent labels are global within the user's launchd domain; use stable reverse-DNS labels to avoid collisions.
 - LaunchDaemon, MachServices, socket activation, raw plist keys, import, and rollback after every possible launchctl failure are not implemented yet.
 - `StartCalendarInterval` follows local calendar time and launchd semantics; it is not a cron parser.

@@ -32,4 +32,4 @@ updated: 2026-08-10
 
 - [x] T17 [blocks T18] Record the loopback-only, tokenless Web UI boundary and accepted local-user risk in ADR 0013.
 - [x] T18 [depends T17, blocks T19] Remove remote binding and bearer-token handling from the CLI, server, browser transport, and focused tests.
-- [ ] T19 [depends T18] Update user documentation and verify the full check plus standalone Web UI boundary.
+- [x] T19 [depends T18] Update user documentation and verify the full check plus standalone Web UI boundary.
