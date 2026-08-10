@@ -5,6 +5,8 @@ date: 2026-08-08
 model: GPT-5.6 Pro
 ---
 
+> The bearer-token and remote-binding decisions are superseded by ADR 0013.
+
 # Context
 
 The project needs a public Web application for editing and previewing manifests and a local Web UI capable of reading files and controlling launchd. Browsers cannot access launchctl directly.

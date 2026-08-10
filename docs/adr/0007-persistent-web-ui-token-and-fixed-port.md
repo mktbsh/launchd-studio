@@ -5,6 +5,8 @@ date: 2026-08-09
 model: Claude Opus 5
 ---
 
+> The token decisions are superseded by ADR 0013. The fixed-port and self-service decisions remain in force.
+
 # Context
 
 The Web UI is meant to be installable as a LaunchAgent so it is simply always there. A per-start random token on a random port makes that useless: the URL changes on every restart and the only copy of the token is the job's stdout log.

@@ -1,6 +1,6 @@
 ---
 title: Launchd Studio work tracker
-updated: 2026-08-09
+updated: 2026-08-10
 ---
 
 # v0.1.0 attribution app
@@ -27,3 +27,9 @@ updated: 2026-08-09
 - [x] T14 [depends T13] Remove `--config` and the optional `init` path from the public CLI interface.
 - [x] T15 [depends T13] Generate the self-service LaunchAgent without a manifest argument.
 - [x] T16 [depends T14, T15] Update tests, README, CONTEXT, ADR, and migration instructions.
+
+# tokenless loopback-only Web UI
+
+- [x] T17 [blocks T18] Record the loopback-only, tokenless Web UI boundary and accepted local-user risk in ADR 0013.
+- [ ] T18 [depends T17, blocks T19] Remove remote binding and bearer-token handling from the CLI, server, browser transport, and focused tests.
+- [ ] T19 [depends T18] Update user documentation and verify the full check plus standalone Web UI boundary.
