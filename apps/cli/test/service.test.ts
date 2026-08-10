@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { compileManifest, renderLaunchdJob, stringifyManifest } from "@launchd-studio/core";
@@ -159,6 +159,26 @@ describe("local studio service state reconciliation", () => {
       expect(rendered.jobs.find((job) => job.id === "api")?.plist).not.toContain(
         "AssociatedBundleIdentifiers",
       );
+    } finally {
+      await rm(home, { recursive: true, force: true });
+    }
+  });
+
+  test("detects the user's local bin directory", async () => {
+    const home = await mkdtemp(join(tmpdir(), "launchd-studio-home-"));
+    try {
+      const homeBin = join(home, ".local", "bin");
+      await mkdir(homeBin, { recursive: true });
+      const service = new LocalStudioService({
+        configPath: join(home, "launchd-studio.json"),
+        homeDirectory: home,
+        launchd: unloadedLaunchd(),
+      });
+
+      expect((await service.getCapabilities()).toolPaths).toContainEqual({
+        name: "Home bin",
+        directory: homeBin,
+      });
     } finally {
       await rm(home, { recursive: true, force: true });
     }

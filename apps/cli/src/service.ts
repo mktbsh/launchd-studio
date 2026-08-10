@@ -152,6 +152,10 @@ async function findToolPaths(homeDirectory: string): Promise<ReadonlyArray<ToolP
   if (await isDirectory(shims)) {
     found.push({ name: "mise shims", directory: shims });
   }
+  const homeBin = join(homeDirectory, ".local", "bin");
+  if (await isDirectory(homeBin)) {
+    found.push({ name: "Home bin", directory: homeBin });
+  }
   for (const prefix of [process.env.HOMEBREW_PREFIX, "/opt/homebrew", "/usr/local"]) {
     if (prefix === undefined) {
       continue;
