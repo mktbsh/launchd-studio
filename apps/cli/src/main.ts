@@ -28,7 +28,6 @@ import {
   writeTextAtomic,
 } from "./adapters/filesystem";
 import { defaultManifestPath } from "./adapters/paths";
-import { defaultTokenPath, readOrCreateToken } from "./adapters/state";
 import { DEFAULT_WEB_UI_PORT, LocalStudioService, StudioError } from "./service";
 import { startWebUiServer } from "./server/server";
 import {
@@ -82,7 +81,7 @@ Command options:
   remove --keep-plist
   logs --stream <stdout|stderr> --tail <lines> --follow
   update --check
-  web-ui --host <host> --port <port> --no-open --no-update --allow-remote
+  web-ui --port <port> --no-open --no-update
 
 Environment:
   LAUNCHD_STUDIO_PORT         Web UI port; --port wins, 0 picks a free one
@@ -470,14 +469,10 @@ async function run(): Promise<number> {
       ) {
         return 0;
       }
-      const host = stringOption(invocation.options, "host") ?? "127.0.0.1";
       const server = startWebUiServer({
         transport: service,
-        host,
         port: webUiPort,
-        token: await readOrCreateToken(defaultTokenPath(service.homeDirectory)),
         openBrowser: booleanOption(invocation.options, "open", true),
-        allowRemote: booleanOption(invocation.options, "allow-remote"),
       });
       console.log(`Web UI: ${server.url}`);
       console.log(`Manifest: ${service.configPath}`);

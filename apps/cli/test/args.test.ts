@@ -31,6 +31,8 @@ describe("CLI arguments", () => {
 
   test("rejects unknown and malformed options", () => {
     expect(() => parseCliArgs(["plan", "--dryrun"])).toThrow();
+    expect(() => parseCliArgs(["web-ui", "--host", "0.0.0.0"])).toThrow();
+    expect(() => parseCliArgs(["web-ui", "--allow-remote"])).toThrow();
     expect(() => parseCliArgs(["web-ui", "--no-host"])).toThrow();
     expect(() => parseCliArgs(["validate", "--config", "./launchd.json"])).toThrow();
     expect(() => parseCliArgs(["validate", "--json=false"])).toThrow();

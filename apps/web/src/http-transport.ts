@@ -25,48 +25,9 @@ interface ApiErrorEnvelope {
   };
 }
 
-export function tokenFromLocation(location: Location): string | null {
-  const parameters = new URLSearchParams(location.hash.replace(/^#/, ""));
-  const token = parameters.get("token");
-  return token !== null && token.length > 0 ? token : null;
-}
-
-export function clearTokenFragment(): void {
-  if (window.location.hash.length === 0) {
-    return;
-  }
-  history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
-}
-
-const TOKEN_STORAGE_KEY = "launchd-studio.web-ui-token";
-
-export function loadStoredToken(storage: Storage): string | null {
-  try {
-    const token = storage.getItem(TOKEN_STORAGE_KEY);
-    return token !== null && token.length > 0 ? token : null;
-  } catch {
-    return null;
-  }
-}
-
-export function storeToken(storage: Storage, token: string): void {
-  try {
-    storage.setItem(TOKEN_STORAGE_KEY, token);
-  } catch {
-    // The current page still works from the URL fragment when storage is unavailable.
-  }
-}
-
 export class HttpStudioTransport implements StudioTransport {
-  readonly #token: string;
-
-  constructor(token: string) {
-    this.#token = token;
-  }
-
   async #request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const headers = new Headers(init.headers);
-    headers.set("Authorization", `Bearer ${this.#token}`);
     if (init.body !== undefined) {
       headers.set("Content-Type", "application/json");
     }

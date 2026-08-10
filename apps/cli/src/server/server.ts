@@ -8,26 +8,18 @@ import type {
 import { StudioError } from "../service";
 
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
+const WEB_UI_HOST = "127.0.0.1";
 
 export interface WebUiServerOptions {
   readonly transport: StudioTransport;
-  readonly host: string;
   readonly port: number;
-  readonly token: string;
   readonly openBrowser: boolean;
-  readonly allowRemote: boolean;
 }
 
 export interface RunningWebUiServer {
   readonly url: string;
-  readonly publicUrl: string;
-  readonly host: string;
   readonly port: number;
   stop(): void;
-}
-
-function isLoopbackHost(host: string): boolean {
-  return host === "127.0.0.1" || host === "localhost" || host === "::1";
 }
 
 function jsonResponse(value: unknown, status = 200): Response {
@@ -399,29 +391,20 @@ function openUrl(url: string): void {
 }
 
 export function startWebUiServer(options: WebUiServerOptions): RunningWebUiServer {
-  if (!isLoopbackHost(options.host) && !options.allowRemote) {
-    throw new StudioError(
-      "Refusing to bind the mutation-capable Web UI to a non-loopback address without --allow-remote.",
-      { status: 400, code: "server.remote-bind-denied" },
-    );
-  }
-
-  const token = options.token;
   const staticAssets = findStaticAssets();
   let server: ReturnType<typeof Bun.serve>;
   server = Bun.serve({
-    hostname: options.host,
+    hostname: WEB_UI_HOST,
     port: options.port,
     async fetch(request) {
       const url = new URL(request.url);
+      if (url.hostname !== WEB_UI_HOST) {
+        return jsonResponse(
+          { error: { code: "host.invalid", message: "Invalid request host." } },
+          403,
+        );
+      }
       if (url.pathname.startsWith("/api/")) {
-        const authorization = request.headers.get("authorization");
-        if (authorization !== `Bearer ${token}`) {
-          return jsonResponse(
-            { error: { code: "auth.invalid", message: "Invalid Web UI token." } },
-            401,
-          );
-        }
         const origin = request.headers.get("origin");
         if (origin !== null) {
           let originUrl: URL;
@@ -457,16 +440,12 @@ export function startWebUiServer(options: WebUiServerOptions): RunningWebUiServe
       code: "server.port-unavailable",
     });
   }
-  const displayHost = options.host === "::1" ? "[::1]" : options.host;
-  const publicUrl = `http://${displayHost}:${port}/`;
-  const url = `${publicUrl}#token=${encodeURIComponent(token)}`;
+  const url = `http://${WEB_UI_HOST}:${port}/`;
   if (options.openBrowser) {
     openUrl(url);
   }
   return {
     url,
-    publicUrl,
-    host: options.host,
     port,
     stop: () => server.stop(true),
   };

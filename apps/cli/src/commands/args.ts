@@ -22,7 +22,6 @@ const BOOLEAN_OPTIONS = new Set([
   "keep-plist",
   "follow",
   "open",
-  "allow-remote",
   "check",
   "update",
 ]);
@@ -32,7 +31,6 @@ const VALUE_OPTIONS = new Set([
   "output",
   "stream",
   "tail",
-  "host",
   "port",
 ]);
 

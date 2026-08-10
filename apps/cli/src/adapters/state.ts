@@ -151,27 +151,3 @@ export function defaultManagedStatePath(homeDirectory: string): string {
     "state.json",
   );
 }
-
-export function defaultTokenPath(homeDirectory: string): string {
-  return join(
-    homeDirectory,
-    "Library",
-    "Application Support",
-    "launchd-studio",
-    "web-ui-token",
-  );
-}
-
-// The token outlives the process so a Web UI running as a LaunchAgent keeps the
-// same bookmarkable URL across restarts.
-export async function readOrCreateToken(path: string): Promise<string> {
-  const existing = (await readTextIfExists(path))?.trim();
-  if (existing !== undefined && existing.length > 0) {
-    return existing;
-  }
-  const bytes = new Uint8Array(32);
-  crypto.getRandomValues(bytes);
-  const token = Buffer.from(bytes).toString("base64url");
-  await writeTextAtomic(path, `${token}\n`, 0o600);
-  return token;
-}
