@@ -20,7 +20,7 @@ Instead of editing plist keys directly, define either a long-running `service` o
 - status, start, stop, restart, logs, and doctor commands
 - loopback-only Web UI served by the CLI, installable as a login service from its own Overview
 - signed self-update checks for the compiled macOS binary
-- mise and Homebrew detection for a job's `PATH`
+- mise, Homebrew, and user-local bin detection for a job's `PATH`
 - Vite output embeddable in a standalone Bun executable
 
 ## Requirements
@@ -246,13 +246,14 @@ launchctl list | grep 'horse.hsb.launchd-studio'
 
 After verifying the new agent, remove the old project-local manifest and schema if they are no longer needed.
 
-### Toolchain paths
+### PATH entries
 
-launchd hands a job only the system `PATH`. A job's environment editor offers one checkbox per detected toolchain, each putting its directory in front of the job's `PATH`:
+launchd hands a job only the system `PATH`. A job's environment editor offers one checkbox per detected toolchain or user-local bin directory, each putting its directory in front of the job's `PATH`:
 
 | Checkbox | Detected at |
 | --- | --- |
 | Use mise shims | `<MISE_DATA_DIR or ~/.local/share/mise>/shims` |
+| Use Home bin | `~/.local/bin` when it exists |
 | Use Homebrew | the first of `$HOMEBREW_PREFIX`, `/opt/homebrew`, `/usr/local` with an executable `bin/brew` |
 
 Executables in `command` still have to be absolute: launchd resolves nothing through `PATH`, which only applies to what the job itself spawns. When the executable box holds a bare name, the command editor offers **Resolve in …** for each detected toolchain, which rewrites it to that directory's absolute path.
