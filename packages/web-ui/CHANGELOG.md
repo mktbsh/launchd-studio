@@ -1,5 +1,13 @@
 # @launchd-studio/web-ui
 
+## 0.1.3
+
+### Patch Changes
+
+- 376a212: Remove remote Web UI binding and bearer-token handling so the loopback URL works directly across browser sessions.
+- Updated dependencies [376a212]
+  - @launchd-studio/core@0.1.3
+
 ## 0.1.2
 
 ### Patch Changes
